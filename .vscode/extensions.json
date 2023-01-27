@@ -3,6 +3,7 @@
     "marus25.cortex-debug",
     "ms-vscode.cmake-tools",
     "ms-vscode.cpptools",
-    "chris-hock.pioasm"
+    "chris-hock.pioasm",
+    "bierner.github-markdown-preview"
   ]
 }

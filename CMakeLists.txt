@@ -25,7 +25,21 @@ pico_set_program_version(${PROJECT_NAME} ${PROJECT_VERSION})
 target_sources(${PROJECT_NAME}
     PRIVATE
         "src/main.cpp"
+        "src/util.cpp"
+        "src/queued_dac.cpp"
+        "src/pulse_queue.cpp"
+        "src/channel.cpp"
+        "src/output.cpp"
+        "src/protocol.cpp"
+        "src/pulse_func_gen.cpp"
+        "src/hardware/ads1015.cpp"
+        "src/hardware/mcp4728.cpp"
+        "src/comms/cli.cpp"
+        "src/comms/cli_hardware.cpp"
 )
+
+# Generate PIO headers (place them in the build/generated folder)
+pico_generate_pio_header(${PROJECT_NAME} ../src/pio/pulse_gen.pio OUTPUT_DIR build/generated)
 
 # Link the pico standard library 
 target_link_libraries(${PROJECT_NAME} PRIVATE pico_stdlib)
@@ -37,14 +51,17 @@ target_link_libraries(${PROJECT_NAME}
         hardware_i2c
         hardware_pio
         hardware_adc
+        hardware_dma
         pico_multicore
 )
 
 pico_set_program_name(${PROJECT_NAME} ${PROJECT_NAME})
 pico_set_program_version(${PROJECT_NAME} ${PROJECT_VERSION})
 
-pico_enable_stdio_uart(${PROJECT_NAME} 1)
-pico_enable_stdio_usb(${PROJECT_NAME} 0)
+pico_enable_stdio_uart(${PROJECT_NAME} 0)
+pico_enable_stdio_usb(${PROJECT_NAME} 1)
+
+pico_set_float_implementation(${PROJECT_NAME} pico)
 
 # Create map/bin/hex/uf2 files
 pico_add_extra_outputs(${PROJECT_NAME})
@@ -56,4 +73,5 @@ target_compile_options(${PROJECT_NAME} PRIVATE
     -Wno-format # int != int32_t as far as the compiler is concerned because gcc has int32_t as long int
 )
 
+include(config.cmake)
 

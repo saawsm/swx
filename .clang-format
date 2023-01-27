@@ -1,0 +1,7 @@
+---
+BasedOnStyle: "Google"
+ColumnLimit: "160"
+IndentWidth: "3"
+SortIncludes: "false"
+AllowShortFunctionsOnASingleLine: 'Inline'
+...
