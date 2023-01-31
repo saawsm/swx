@@ -1,6 +1,8 @@
 #include "pulse_func_gen.h"
 
-constexpr swx::PulseFuncGenerator::Param STATE_SEQUENCE[4] = {
+#define STATE_COUNT (4)
+
+constexpr swx::PulseFuncGenerator::Param STATE_SEQUENCE[STATE_COUNT] = {
     swx::PulseFuncGenerator::OFF_TIME,
     swx::PulseFuncGenerator::ON_RAMP_TIME,
     swx::PulseFuncGenerator::ON_TIME,
@@ -40,12 +42,12 @@ void swx::PulseFuncGenerator::process() {
 
    for (uint8_t channel = 0; channel < CHANNEL_COUNT; channel++) {
       ChannelInfo& ch = channels[channel];
-      
+
       if (ch.source == NONE) continue;
 
       uint32_t time = time_us_32();
       if (time > ch.nextStateTime) {
-         if (++ch.stateIndex >= 4) ch.stateIndex = 0;  // increment or reset after 4 states (off, on_ramp, on, off_ramp)
+         if (++ch.stateIndex >= STATE_COUNT) ch.stateIndex = 0;  // increment or reset after 4 states (off, on_ramp, on, off_ramp)
 
          // set the next state time based on the state parameter (off_time, on_ramp_time, on_time, off_ramp_time)
          ch.nextStateTime = time + (getParameter(channel, STATE_SEQUENCE[ch.stateIndex], VALUE) * 1000);
@@ -71,10 +73,8 @@ void swx::PulseFuncGenerator::process() {
             break;
          }
 
-         case OFF_TIME: {  // if the state is off, continue to next channel without pulsing
-            output.setPower(channel, 0);
-            continue;
-         }
+         case OFF_TIME: // if the state is off, continue to next channel without pulsing
+            continue;         
          default:
             break;
       }
