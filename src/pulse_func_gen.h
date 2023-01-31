@@ -75,8 +75,7 @@ class PulseFuncGenerator final {
    class Parameter final {
       uint16_t values[TOTAL_TARGETS];
 
-      int8_t dir;
-      uint8_t step;
+      int8_t step;
       uint32_t nextUpdateTime;
       uint32_t updatePeriod;
 
@@ -92,7 +91,7 @@ class PulseFuncGenerator final {
 
    struct ChannelInfo final {
       PulseSrc source;
-      float power;
+      float powerModifier;
 
       uint32_t nextPulseTime;
       uint32_t nextStateTime;
@@ -120,9 +119,9 @@ class PulseFuncGenerator final {
 
    void setPower(uint8_t channel, uint16_t value) {
       if (value > 1000) value = 1000;
-      channels[channel].power = (float)value / 1000.0f;
+      channels[channel].powerModifier = (float)value / 1000.0f;
    }
-   uint16_t getPower(uint8_t channel) const { return channels[channel].power; }
+   uint16_t getPower(uint8_t channel) const { return channels[channel].powerModifier; }
 };
 
 }  // namespace swx

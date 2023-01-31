@@ -16,23 +16,25 @@ swx::PulseFuncGenerator::PulseFuncGenerator(Output& output) : output(output) {
       ch.nextPulseTime = 0;
       ch.nextStateTime = 0;
       ch.stateIndex = 0;
-      ch.power = 0.5f;
 
-      if (((CH_ENABLED >> channel) & 1) == 0) {  // Dont enable generator slots for disabled channels by default
-         ch.source = NONE;
-      } else {
-         ch.source = BASIC;
-      }
+      setSource(channel, NONE);
+      setPower(channel, 0);
 
-      setParameter(channel, FREQUENCY, MAX, 5000);
+      setParameter(channel, FREQUENCY, MAX, 5000);  // max. 500 Hz
 
-      setParameter(channel, PULSE_WIDTH, MAX, 255);
+      setParameter(channel, PULSE_WIDTH, MAX, 500);  // max. 500 us
 
-      setParameter(channel, ON_TIME, MAX, UINT16_MAX);
-      setParameter(channel, ON_RAMP_TIME, MAX, UINT16_MAX);
+      setParameter(channel, ON_TIME, MAX, UINT16_MAX);  // max. 65.5 seconds
+      setParameter(channel, ON_TIME, VALUE, 5000);      // 5 seconds
 
-      setParameter(channel, OFF_TIME, MAX, UINT16_MAX);
-      setParameter(channel, OFF_RAMP_TIME, MAX, UINT16_MAX);
+      setParameter(channel, ON_RAMP_TIME, MAX, UINT16_MAX);  // max. 65.5 seconds
+      setParameter(channel, ON_RAMP_TIME, VALUE, 1500);      // 1.5 seconds
+
+      setParameter(channel, OFF_TIME, MAX, UINT16_MAX);  // max. 65.5 seconds
+      setParameter(channel, OFF_TIME, VALUE, 12000);     // 12 seconds
+
+      setParameter(channel, OFF_RAMP_TIME, MAX, UINT16_MAX);  // max. 65.5 seconds
+      setParameter(channel, OFF_RAMP_TIME, VALUE, 500);       // 0.5 seconds
    }
 }
 
@@ -54,7 +56,6 @@ void swx::PulseFuncGenerator::process() {
       }
 
       float powerModifier = 1.0f;
-
       // scale power level depending on the current state (e.g. transition between off and on)
       time = time_us_32();
       Param channelState = STATE_SEQUENCE[ch.stateIndex];
@@ -73,18 +74,18 @@ void swx::PulseFuncGenerator::process() {
             break;
          }
 
-         case OFF_TIME: // if the state is off, continue to next channel without pulsing
-            continue;         
+         case OFF_TIME:  // if the state is off, continue to next channel without pulsing
+            continue;
          default:
             break;
       }
 
-      powerModifier *= channels[channel].power;  // apply the general channel power modifier to the 'state' power modifier
+      powerModifier *= channels[channel].powerModifier;  // combine the channel power modifier with the 'state' power modifier
 
       switch (ch.source) {
          case BASIC: {  // basic pulse gen
             uint16_t power = getParameter(channel, POWER, VALUE);
-            if (power == 0) break;
+            if (power == 0 || powerModifier == 0.0f) break;
 
             // Set channel output power
             output.setPower(channel, static_cast<uint16_t>(powerModifier * power));
@@ -114,7 +115,7 @@ void swx::PulseFuncGenerator::process() {
 // #################################################################################################################
 //
 
-swx::PulseFuncGenerator::Parameter::Parameter() : dir(1), nextUpdateTime(0) {
+swx::PulseFuncGenerator::Parameter::Parameter() : nextUpdateTime(0) {
    for (uint8_t i = 0; i < TOTAL_TARGETS; i++) values[i] = 0;
 
    values[MAX] = 1000;
@@ -129,15 +130,17 @@ void swx::PulseFuncGenerator::Parameter::update() {
 
    nextUpdateTime = time_us_32() + updatePeriod;
 
-   // TODO: Handle potential overflow/underflow when step is 2 or more
+   const uint16_t oldValue = values[VALUE];
 
-   values[VALUE] += step * dir;  // inc/dec parameter
+   values[VALUE] += step;
 
-   if (values[VALUE] <= values[MIN] || values[VALUE] >= values[MAX]) {
+   if (values[VALUE] <= values[MIN] || values[VALUE] >= values[MAX] || (step < 0 && values[VALUE] > oldValue) || (step > 0 && values[VALUE] < oldValue)) {
       switch (values[MODE]) {
-         case UP_DOWN:
-            dir *= -1;
+         case UP_DOWN: {
+            step *= -1;
+            values[VALUE] = step < 0 ? values[MIN] : values[MAX];
             break;
+         }
          case DOWN_RESET:
             values[VALUE] = values[MAX];
             break;
@@ -179,6 +182,8 @@ void swx::PulseFuncGenerator::Parameter::set(Target target, uint16_t value) {
             step++;
          }
       }
+
+      if (values[MODE] == DOWN_RESET) step = -step;
    }
 
    // ensure parameter values are valid
@@ -187,13 +192,6 @@ void swx::PulseFuncGenerator::Parameter::set(Target target, uint16_t value) {
       case MAX:
       case VALUE:
          values[VALUE] = clamp(values[VALUE], values[MIN], values[MAX]);
-         break;
-      case MODE:
-         if (value == UP_RESET) {
-            dir = 1;
-         } else if (value == DOWN_RESET) {
-            dir = -1;
-         }
          break;
       default:
          break;
