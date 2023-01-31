@@ -9,7 +9,7 @@
 #define I2C_MUTEX_TIMEOUT (5000)
 #endif
 
-static mutex_t mutex_i2c;
+auto_init_mutex(mutex_i2c);
 
 void i2c_scan() {
    printf("Scanning for I2C devices...\n");
