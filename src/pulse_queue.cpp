@@ -8,7 +8,7 @@ swx::PulseQueue::~PulseQueue() {
    queue_free(&queue);
 }
 
-bool swx::PulseQueue::enqueue(uint8_t channel, uint8_t pos_us, uint8_t neg_us) {
+bool swx::PulseQueue::enqueue(uint8_t channel, uint16_t pos_us, uint16_t neg_us) {
    Pulse pulse = {
        .channel = channel,
        .pos_us = pos_us,

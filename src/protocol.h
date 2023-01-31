@@ -43,11 +43,10 @@ class Protocol final {
    Output& output;
    PulseFuncGenerator& funcGen;
 
-   uint8_t lastPulsePos;
-   uint8_t lastPulseNeg;
+   uint16_t lastPulse;
 
   public:
-   Protocol(Output& output, PulseFuncGenerator& funcGen) : output(output), funcGen(funcGen), lastPulsePos(50), lastPulseNeg(50) {}
+   Protocol(Output& output, PulseFuncGenerator& funcGen) : output(output), funcGen(funcGen), lastPulse(50) {}
 
    void parseCommand(Cli& cli, uint8_t ctrl);
 };

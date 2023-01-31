@@ -30,10 +30,9 @@ void swx::Protocol::parseCommand(Cli& cli, uint8_t ctrl) {
             uint8_t buffer[2];
             cli.readBlocking(buffer, 2);
 
-            lastPulsePos = buffer[0];
-            lastPulseNeg = buffer[1];
+            lastPulse = (buffer[0] << 8 | buffer[1]);
          }
-         output.pulse(channel, lastPulsePos, lastPulseNeg);
+         output.pulse(channel, lastPulse);
          break;
       }
       case MSG_CMD_CH_LL_POWER: {  // set low level channel power

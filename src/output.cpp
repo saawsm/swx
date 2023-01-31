@@ -70,7 +70,7 @@ void swx::Output::setPower(uint8_t channel, uint16_t power) {
    channels[channel]->setPower(power);
 }
 
-void swx::Output::pulse(uint8_t channel, uint8_t pos_us, uint8_t neg_us) {
+void swx::Output::pulse(uint8_t channel, uint16_t pos_us, uint16_t neg_us) {
    channels[channel]->pulse(pos_us, neg_us);
 }
 

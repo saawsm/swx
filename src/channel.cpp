@@ -148,12 +148,12 @@ void swx::Channel::setPower(uint16_t power) {
    dac.setChannel(dacChannel, dacValue);
 }
 
-void swx::Channel::pulse(uint8_t pos_us, uint8_t neg_us) {
+void swx::Channel::pulse(uint16_t pos_us, uint16_t neg_us) {
    if (status != READY) return;
    queue.enqueue(index, pos_us, neg_us);
 }
 
-void swx::Channel::immediatePulse(uint8_t pos_us, uint8_t neg_us) {
+void swx::Channel::immediatePulse(uint16_t pos_us, uint16_t neg_us) {
    if (status != READY) return;
 
    if (!pio_sm_is_tx_fifo_full(pio, sm)) {

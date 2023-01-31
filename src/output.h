@@ -44,8 +44,8 @@ class Output final {
 
    void setPower(uint8_t channel, uint16_t power);
 
-   void pulse(uint8_t channel, uint8_t pos_us, uint8_t neg_us);
-   void pulse(uint8_t channel, uint8_t us) { pulse(channel, us, us); }
+   void pulse(uint8_t channel, uint16_t pos_us, uint16_t neg_us);
+   void pulse(uint8_t channel, uint16_t us) { pulse(channel, us, us); }
 
    swx::Channel::Status getStatus(uint8_t channel) const;
 

@@ -59,11 +59,11 @@ class Channel final {
 
    void setPower(uint16_t power);
 
-   void pulse(uint8_t pos_us, uint8_t neg_us);
-   inline void pulse(uint8_t us) { pulse(us, us); }
+   void pulse(uint16_t pos_us, uint16_t neg_us);
+   inline void pulse(uint16_t us) { pulse(us, us); }
 
-   void immediatePulse(uint8_t pos_us, uint8_t neg_us);
-   inline void immediatePulse(uint8_t us) { immediatePulse(us, us); }
+   void immediatePulse(uint16_t pos_us, uint16_t neg_us);
+   inline void immediatePulse(uint16_t us) { immediatePulse(us, us); }
 
    Status calibrate();
 

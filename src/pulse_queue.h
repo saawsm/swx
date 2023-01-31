@@ -9,8 +9,8 @@ namespace swx {
 
 struct Pulse {
    uint8_t channel;
-   uint8_t pos_us;
-   uint8_t neg_us;
+   uint16_t pos_us;
+   uint16_t neg_us;
 };
 
 class PulseQueue final {
@@ -31,7 +31,7 @@ class PulseQueue final {
    PulseQueue(PulseQueue&&) = delete;
    PulseQueue& operator=(PulseQueue&&) = delete;
 
-   bool enqueue(uint8_t channel, uint8_t pos_us, uint8_t neg_us);
+   bool enqueue(uint8_t channel, uint16_t pos_us, uint16_t neg_us);
 
    bool dequeue(Pulse* pulse);
 };
