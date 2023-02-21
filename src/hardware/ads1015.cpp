@@ -2,28 +2,27 @@
 
 #include "../util.h"
 
-swx::ADS1015::ADS1015(i2c_inst_t* i2c, uint8_t address, Gain gain, Rate rate)
-    : Adc(ADS1015_CHANNEL_COUNT), i2c(i2c), address(address), gain(gain), rate(rate) {}
+swx::ADS1015::ADS1015(i2c_inst_t* i2c, uint8_t address, Gain gain, Rate rate) : Adc(ADS1015_CHANNEL_COUNT), i2c(i2c), address(address), gain(gain), rate(rate) {}
 
 // Based on https://github.com/adafruit/Adafruit_ADS1X15/blob/2f58faf6e28108f46223940dfc7d8540303765bc/Adafruit_ADS1X15.cpp
 bool swx::ADS1015::startConversion(uint8_t channel, bool continuous) {
-   uint16_t config = ADS1015_REG_CONFIG_CQUE_NONE |     // Set CQUE to disabled
-                     ADS1015_REG_CONFIG_CLAT_NONLAT |   // Non-latching (default val)
-                     ADS1015_REG_CONFIG_CPOL_ACTVLOW |  // Alert/Rdy active low   (default val)
-                     ADS1015_REG_CONFIG_CMODE_TRAD;     // Traditional comparator (default val)
+   uint16_t config = ADS1015_REG_CONFIG_CQUE_NONE |    // Set CQUE to disabled
+                     ADS1015_REG_CONFIG_CLAT_NONLAT |  // Non-latching (default val)
+                     ADS1015_REG_CONFIG_CPOL_ACTVLOW | // Alert/Rdy active low   (default val)
+                     ADS1015_REG_CONFIG_CMODE_TRAD;    // Traditional comparator (default val)
    if (continuous) {
-      config |= ADS1015_REG_CONFIG_MODE_CONTIN;  // Continuous sampling
+      config |= ADS1015_REG_CONFIG_MODE_CONTIN; // Continuous sampling
    } else {
-      config |= ADS1015_REG_CONFIG_MODE_SINGLE;  // Single shot mode
+      config |= ADS1015_REG_CONFIG_MODE_SINGLE; // Single shot mode
    }
 
-   config |= gain;                             // Set PGA gain
-   config |= rate;                             // Set sample rate
-   config |= ADS1015_CHANNEL_TO_MUX[channel];  // Set mux for single ended / specified channel
+   config |= gain;                            // Set PGA gain
+   config |= rate;                            // Set sample rate
+   config |= ADS1015_CHANNEL_TO_MUX[channel]; // Set mux for single ended / specified channel
 
-   config |= ADS1015_REG_CONFIG_OS_SINGLE;  // Set single-conversion bit
+   config |= ADS1015_REG_CONFIG_OS_SINGLE; // Set single-conversion bit
 
-   return writeRegister(ADS1015_REG_POINTER_CONFIG, config);  // Start conversion
+   return writeRegister(ADS1015_REG_POINTER_CONFIG, config); // Start conversion
 }
 
 bool swx::ADS1015::conversionComplete() {
@@ -34,13 +33,13 @@ int16_t swx::ADS1015::lastConversion() {
    uint16_t res = readRegister(ADS1015_REG_POINTER_CONVERT) >> 4;
 
    // Shift 12-bit results right 4 bits, making sure we keep the sign bit intact
-   if (res > 0x07FF)  // negative number - extend the sign to 16th bit
+   if (res > 0x07FF) // negative number - extend the sign to 16th bit
       res |= 0xF000;
 
    return (int16_t)res;
 }
 
-float swx::ADS1015::computeVolts(int16_t counts) {  // see data sheet Table 3
+float swx::ADS1015::computeVolts(int16_t counts) { // see data sheet Table 3
    float fsRange;
    switch (gain) {
       case GAIN_TWOTHIRDS:

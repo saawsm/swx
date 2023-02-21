@@ -6,7 +6,7 @@
 #include <pico/mutex.h>
 
 #ifndef I2C_MUTEX_TIMEOUT
-#define I2C_MUTEX_TIMEOUT (5000)
+   #define I2C_MUTEX_TIMEOUT (5000)
 #endif
 
 auto_init_mutex(mutex_i2c);
@@ -26,7 +26,7 @@ void i2c_scan() {
 
       int ret;
       uint8_t data;
-      if ((address & 0x78) == 0 || (address & 0x78) == 0x78)  // I2C reserves some addresses for special purposes. These are 1111XXX and 0000XXX.
+      if ((address & 0x78) == 0 || (address & 0x78) == 0x78) // I2C reserves some addresses for special purposes. These are 1111XXX and 0000XXX.
          ret = PICO_ERROR_GENERIC;
       else
          ret = i2c_read_blocking(I2C_PORT, address, &data, 1, false);
@@ -53,7 +53,7 @@ void blink_led_infinite_loop(uint32_t pin, uint32_t delay_ms) {
    }
 }
 
-int i2c_write(i2c_inst_t *i2c, uint8_t addr, const uint8_t *src, size_t len, bool nostop, uint timeout_us) {
+int i2c_write(i2c_inst_t* i2c, uint8_t addr, const uint8_t* src, size_t len, bool nostop, uint timeout_us) {
    if (!mutex_enter_timeout_us(&mutex_i2c, I2C_MUTEX_TIMEOUT)) {
       printf("i2c_write: mutex timeout\n");
       return -1;
@@ -65,7 +65,7 @@ int i2c_write(i2c_inst_t *i2c, uint8_t addr, const uint8_t *src, size_t len, boo
    return ret;
 }
 
-int i2c_read(i2c_inst_t *i2c, uint8_t addr, uint8_t *dst, size_t len, bool nostop, uint timeout_us) {
+int i2c_read(i2c_inst_t* i2c, uint8_t addr, uint8_t* dst, size_t len, bool nostop, uint timeout_us) {
    if (!mutex_enter_timeout_us(&mutex_i2c, I2C_MUTEX_TIMEOUT)) {
       printf("i2c_read: mutex timeout\n");
       return -1;

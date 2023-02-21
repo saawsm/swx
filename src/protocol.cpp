@@ -4,15 +4,16 @@ void swx::Protocol::parseCommand(Cli& cli, uint8_t ctrl) {
    bool isWrite = (ctrl & MSG_MODE_MASK) >> MSG_MODE;
    uint8_t channel = (ctrl & MSG_CHANNEL_MASK) >> MSG_CHANNEL;
 
-   if (channel >= CHANNEL_COUNT) return;
+   if (channel >= CHANNEL_COUNT)
+      return;
 
    switch ((ctrl & MSG_CMD_MASK) >> MSG_CMD) {
-      case MSG_CMD_STATUS: {  // respond with swx status information
+      case MSG_CMD_STATUS: { // respond with swx status information
          uint8_t buffer[4] = {RES_START, 2, SWX_VERSION, CHANNEL_COUNT};
          cli.writeBlocking(buffer, 4);
          break;
       }
-      case MSG_CMD_PSU: {  // get/set power supply enabled state
+      case MSG_CMD_PSU: { // get/set power supply enabled state
          if (isWrite) {
             output.setPowerEnabled(channel > 0);
          } else {
@@ -20,12 +21,12 @@ void swx::Protocol::parseCommand(Cli& cli, uint8_t ctrl) {
          }
          break;
       }
-      case MSG_CMD_CH_STATUS: {  // respond with channel status
+      case MSG_CMD_CH_STATUS: { // respond with channel status
          uint8_t status = (uint8_t)output.getStatus(channel);
          cli.writeResponse(status);
          break;
       }
-      case MSG_CMD_CH_LL_PULSE: {  // pulse channel with last used values if read mode
+      case MSG_CMD_CH_LL_PULSE: { // pulse channel with last used values if read mode
          if (isWrite) {
             uint8_t buffer[2];
             cli.readBlocking(buffer, 2);
@@ -35,7 +36,7 @@ void swx::Protocol::parseCommand(Cli& cli, uint8_t ctrl) {
          output.pulse(channel, lastPulse);
          break;
       }
-      case MSG_CMD_CH_LL_POWER: {  // set low level channel power
+      case MSG_CMD_CH_LL_POWER: { // set low level channel power
          uint8_t buffer[2];
          cli.readBlocking(buffer, 2);
 
@@ -43,7 +44,7 @@ void swx::Protocol::parseCommand(Cli& cli, uint8_t ctrl) {
          output.setPower(channel, val);
          break;
       }
-      case MSG_CMD_CH_SRC: {  // get/set channel pulse generation source (e.g. audio generation vs function gen)
+      case MSG_CMD_CH_SRC: { // get/set channel pulse generation source (e.g. audio generation vs function gen)
          if (isWrite) {
             uint8_t buffer[1];
             cli.readBlocking(buffer, 1);
@@ -53,7 +54,7 @@ void swx::Protocol::parseCommand(Cli& cli, uint8_t ctrl) {
          }
          break;
       }
-      case MSG_CMD_CH_PARAM: {  // set/get channel parameter - e.g. frequency, pulse width, etc
+      case MSG_CMD_CH_PARAM: { // set/get channel parameter - e.g. frequency, pulse width, etc
          if (isWrite) {
             uint8_t buffer[3];
             cli.readBlocking(buffer, 3);
@@ -78,7 +79,7 @@ void swx::Protocol::parseCommand(Cli& cli, uint8_t ctrl) {
          }
          break;
       }
-      case MSG_CMD_CH_POWER: {  // set/get channel power level
+      case MSG_CMD_CH_POWER: { // set/get channel power level
          if (isWrite) {
             uint8_t buffer[2];
             cli.readBlocking(buffer, 2);

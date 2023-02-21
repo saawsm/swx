@@ -5,7 +5,8 @@
 swx::Cli::Cli(parse_cb parse) : parse(parse) {}
 
 bool swx::Cli::process() {
-   if (!isReadable()) return false;
+   if (!isReadable())
+      return false;
 
    uint8_t ctrl;
    readBlocking(&ctrl, 1);

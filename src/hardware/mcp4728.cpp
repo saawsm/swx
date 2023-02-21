@@ -8,7 +8,7 @@ swx::MCP4728::MCP4728(i2c_inst_t* i2c, const uint8_t address)
 // Based on https://github.com/adafruit/Adafruit_MCP4728/blob/6d389cd87a8bd1e898136b4425c55ca7b83eccee/Adafruit_MCP4728.cpp
 bool swx::MCP4728::setChannel(uint8_t channel, uint16_t value, VRef vref, Gain gain, PowerDownMode pdMode, bool udac) {
 #ifdef I2C_CHECK_WRITE
-   if (i2c_get_write_available(i2c) < sizeof(buffer)) {  // check if we can write without blocking.
+   if (i2c_get_write_available(i2c) < sizeof(buffer)) { // check if we can write without blocking.
       printf("[MCP4728::setChannel] I2C buffer full!\n");
       return false;
    }

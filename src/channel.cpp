@@ -7,8 +7,8 @@
 
 #include "pulse_gen.pio.h"
 
-swx::Channel::Channel(uint8_t index, uint8_t pinGateA, uint8_t pinGateB, Adc& adc, uint8_t adcChannel, Dac& dac, uint8_t dacChannel, PulseQueue& queue,
-                      pio_hw_t* pio, uint8_t sm, uint pio_program_offset, float calThresholdOk, float calThresholdOver, uint16_t calOffPoint)
+swx::Channel::Channel(uint8_t index, uint8_t pinGateA, uint8_t pinGateB, Adc& adc, uint8_t adcChannel, Dac& dac, uint8_t dacChannel, PulseQueue& queue, pio_hw_t* pio, uint8_t sm,
+                      uint pio_program_offset, float calThresholdOk, float calThresholdOver, uint16_t calOffPoint)
     : index(index),
       pinGateA(pinGateA),
       pinGateB(pinGateB),
@@ -52,7 +52,8 @@ swx::Channel::~Channel() {
 }
 
 swx::Channel::Status swx::Channel::calibrate() {
-   if (status != UNINITIALIZED) return INVALID;
+   if (status != UNINITIALIZED)
+      return INVALID;
 
    printf("Starting channel calibration: index=%d sm=%d\n", index, sm);
 
@@ -64,7 +65,7 @@ swx::Channel::Status swx::Channel::calibrate() {
 
    // Validate feedback voltage when unpowered
    float voltage = readVoltage();
-   if (voltage > 0.03f) {  // 30mV - ~30mA (0.1R with 10AV)
+   if (voltage > 0.03f) { // 30mV - ~30mA (0.1R with 10AV)
       printf("Precalibration overvoltage! index=%d sm=%d voltage=%.3fv - ERROR!\n", index, sm, voltage);
 #ifndef CH_IGNORE_CAL_ERRORS
       status = FAULT;
@@ -75,14 +76,14 @@ swx::Channel::Status swx::Channel::calibrate() {
    }
 
    for (uint16_t dacValue = 4000; dacValue > 2000; dacValue -= 10) {
-      dac.setChannel(dacChannel, dacValue);  // Set power level
-      sleep_us(100);                         // Stabilize
+      dac.setChannel(dacChannel, dacValue); // Set power level
+      sleep_us(100);                        // Stabilize
 
       // Switch on both nfets
       gpio_put(pinGateA, 1);
       gpio_put(pinGateB, 1);
 
-      sleep_us(50);  // Stabilize, then sample feedback voltage
+      sleep_us(50); // Stabilize, then sample feedback voltage
 
       voltage = readVoltage();
 
@@ -132,9 +133,11 @@ swx::Channel::Status swx::Channel::calibrate() {
 }
 
 void swx::Channel::setPower(uint16_t power) {
-   if (status != READY) return;
+   if (status != READY)
+      return;
 
-   if (power > 1000) power = 1000;
+   if (power > 1000)
+      power = 1000;
 
    int16_t dacValue = (calValue + calOffPoint) - (power * 2);
 
@@ -149,12 +152,14 @@ void swx::Channel::setPower(uint16_t power) {
 }
 
 void swx::Channel::pulse(uint16_t pos_us, uint16_t neg_us) {
-   if (status != READY) return;
+   if (status != READY)
+      return;
    queue.enqueue(index, pos_us, neg_us);
 }
 
 void swx::Channel::immediatePulse(uint16_t pos_us, uint16_t neg_us) {
-   if (status != READY) return;
+   if (status != READY)
+      return;
 
    if (!pio_sm_is_tx_fifo_full(pio, sm)) {
       static_assert(PULSE_GEN_BITS <= 16);
@@ -169,10 +174,11 @@ static int cmpfunc(const void* a, const void* b) {
    return reinterpret_cast<int32_t>(a) - reinterpret_cast<int32_t>(b);
 }
 
-float swx::Channel::readVoltage() {  // return time: ~640 us
+float swx::Channel::readVoltage() { // return time: ~640 us
    adc.startConversion(adcChannel);
 
-   while (!adc.conversionComplete()) tight_loop_contents();
+   while (!adc.conversionComplete())
+      tight_loop_contents();
 
    int16_t counts = adc.lastConversion();
 
@@ -183,20 +189,21 @@ float swx::Channel::readVoltage() {  // return time: ~640 us
 // Output the feedback voltage for each DAC value in CSV, so it can be imported into a spreadsheet.
 // Characterize can only be called before calibration.
 void swx::Channel::characterize() {
-   if (status != UNINITIALIZED) return;
+   if (status != UNINITIALIZED)
+      return;
 
    printf("Starting channel characterize: index=%d sm=%d dch=%d\n", index, sm, dacChannel);
 
    printf("dac_value,volts,mA\n");
    for (int16_t dacValue = dac.maxValue; dacValue > 500; dacValue -= 5) {
-      dac.setChannel(dacChannel, dacValue);  // Set power level
-      sleep_us(100);                         // Stabilize
+      dac.setChannel(dacChannel, dacValue); // Set power level
+      sleep_us(100);                        // Stabilize
 
       // Switch on both nfets
       gpio_put(pinGateA, 1);
       gpio_put(pinGateB, 1);
 
-      sleep_us(50);  // Stabilize, then sample feedback voltage
+      sleep_us(50); // Stabilize, then sample feedback voltage
 
       float voltage = readVoltage();
 
@@ -210,7 +217,8 @@ void swx::Channel::characterize() {
 
       sleep_ms(5);
 
-      if (voltage >= 3.2f) break;  // break if voltage is getting near limit - since module feedback has the potential to go above 3.3V
+      if (voltage >= 3.2f)
+         break; // break if voltage is getting near limit - since module feedback has the potential to go above 3.3V
    }
 
    // Switch off both nfets

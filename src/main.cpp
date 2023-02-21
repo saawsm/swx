@@ -34,13 +34,13 @@ int main() {
    init_gpio(PIN_REG_EN, GPIO_OUT, 0);
 #endif
 #ifdef PIN_LED
-   init_gpio(PIN_LED, GPIO_OUT, 1);  // turn on led during init
+   init_gpio(PIN_LED, GPIO_OUT, 1); // turn on led during init
 #endif
 #ifdef PIN_LED_OK
    init_gpio(PIN_LED_OK, GPIO_OUT, 0);
 #endif
 
-   set_sys_clock_khz(250000, false);  // try set clock to 250MHz
+   set_sys_clock_khz(250000, false); // try set clock to 250MHz
    stdio_init_all();
 
    adc_init();
@@ -65,7 +65,7 @@ int main() {
    i2c_scan();
 
    Adc* adc = new ADS1015(I2C_PORT, ADC_ADDRESS, ADS1015::GAIN_ONE, ADS1015::RATE_3300SPS);
-   dac = new QueuedDac(new MCP4728(I2C_PORT, DAC_ADDRESS));  // queued dac for processing on core1, since setting each dac channel takes ~110us
+   dac = new QueuedDac(new MCP4728(I2C_PORT, DAC_ADDRESS)); // queued dac for processing on core1, since setting each dac channel takes ~110us
 
    // Startup core1 before output calibration, since channel calibration uses dac
    multicore_reset_core1();
@@ -76,12 +76,13 @@ int main() {
 
    Output& output = Output::instance();
 
-   output.setPowerEnabled(true);  // enable channel power supply
-   if (!output.calibrateAll()) {  // calibrate all enabled channels, if failed blink led
+   output.setPowerEnabled(true); // enable channel power supply
+   if (!output.calibrateAll()) { // calibrate all enabled channels, if failed blink led
 #ifdef PIN_LED_OK
       blink_led_infinite_loop(PIN_LED_OK, 250);
 #else
-      while (true) tight_loop_contents();
+      while (true)
+         tight_loop_contents();
 #endif
    }
 
@@ -97,7 +98,7 @@ int main() {
    protocol = new Protocol(output, funcGen);
 
 #ifdef PIN_LED
-   gpio_put(PIN_LED, 0);  // init finished, turn off led
+   gpio_put(PIN_LED, 0); // init finished, turn off led
 #endif
 
    printf("Starting core0 loop...\n");
@@ -113,7 +114,7 @@ int main() {
 void core1_entry() {
    printf("Starting core1 loop...\n");
    while (true) {
-      dac->process();  // process queued dac commands
+      dac->process(); // process queued dac commands
    }
 }
 

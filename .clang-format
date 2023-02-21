@@ -1,7 +1,16 @@
 ---
-BasedOnStyle: "Google"
-ColumnLimit: "160"
-IndentWidth: "3"
-SortIncludes: "false"
-AllowShortFunctionsOnASingleLine: 'Inline'
+BasedOnStyle: LLVM
+AccessModifierOffset: '-3'
+AllowShortFunctionsOnASingleLine: Inline
+ColumnLimit: '190'
+IndentCaseLabels: 'true'
+IndentPPDirectives: BeforeHash
+IndentWidth: '3'
+PointerAlignment: Left
+SortIncludes: 'false'
+NamespaceIndentation: 'All'
+AlignTrailingComments: 'true'
+ConstructorInitializerAllOnOneLineOrOnePerLine: 'true'
+AllowAllConstructorInitializersOnNextLine: 'true'
+
 ...

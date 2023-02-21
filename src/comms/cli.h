@@ -7,28 +7,28 @@
 
 namespace swx {
 
-class Cli;
+   class Cli;
 
-typedef void (*parse_cb)(Cli& cli, uint8_t ctrl);
+   typedef void (*parse_cb)(Cli& cli, uint8_t ctrl);
 
-class Cli {
-   const parse_cb parse;
+   class Cli {
+      const parse_cb parse;
 
-  public:
-   Cli(parse_cb parse);
-   virtual ~Cli() = default;
+   public:
+      Cli(parse_cb parse);
+      virtual ~Cli() = default;
 
-   bool process();
+      bool process();
 
-   virtual void writeBlocking(const void* data, uint8_t size);
+      virtual void writeBlocking(const void* data, uint8_t size);
 
-   virtual int readBlocking(uint8_t* data, uint8_t size);
+      virtual int readBlocking(uint8_t* data, uint8_t size);
 
-   virtual bool isReadable() const;
+      virtual bool isReadable() const;
 
-   void writeResponse(uint8_t res);
-};
+      void writeResponse(uint8_t res);
+   };
 
-}  // namespace swx
+} // namespace swx
 
-#endif  // _CLI_H
+#endif // _CLI_H
