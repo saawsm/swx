@@ -2,7 +2,8 @@
 
 #include "../util.h"
 
-swx::ADS1015::ADS1015(i2c_inst_t* i2c, uint8_t address, Gain gain, Rate rate) : Adc(ADS1015_CHANNEL_COUNT), i2c(i2c), address(address), gain(gain), rate(rate) {}
+swx::ADS1015::ADS1015(i2c_inst_t* i2c, uint8_t address, Gain gain, Rate rate)
+    : Adc(ADS1015_CHANNEL_COUNT), i2c(i2c), address(address), gain(gain), rate(rate) {}
 
 // Based on https://github.com/adafruit/Adafruit_ADS1X15/blob/2f58faf6e28108f46223940dfc7d8540303765bc/Adafruit_ADS1X15.cpp
 bool swx::ADS1015::startConversion(uint8_t channel, bool continuous) {

@@ -115,7 +115,9 @@ namespace swx {
       void setParameter(uint8_t channel, Param param, uint16_t value) { setParameter(channel, param, Target::VALUE, value); }
       void setParameter(uint8_t channel, Param param, Target target, uint16_t value) { return parameters[(channel * TOTAL_PARAMS) + param].set(target, value); }
 
-      uint16_t getParameter(uint8_t channel, Param param, Target target = Target::VALUE) const { return parameters[(channel * TOTAL_PARAMS) + param].get(target); }
+      uint16_t getParameter(uint8_t channel, Param param, Target target = Target::VALUE) const {
+         return parameters[(channel * TOTAL_PARAMS) + param].get(target);
+      }
 
       void setPower(uint8_t channel, uint16_t value) {
          if (value > 1000)

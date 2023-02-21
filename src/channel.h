@@ -48,8 +48,8 @@ namespace swx {
       Status status;
 
    public:
-      Channel(uint8_t index, uint8_t pinGateA, uint8_t pinGateB, Adc& adc, uint8_t adcChannel, Dac& dac, uint8_t dacChannel, PulseQueue& queue, pio_hw_t* pio, uint8_t sm,
-              uint pio_program_offset, float calThresholdOk, float calThresholdOver, uint16_t calOffPoint);
+      Channel(uint8_t index, uint8_t pinGateA, uint8_t pinGateB, Adc& adc, uint8_t adcChannel, Dac& dac, uint8_t dacChannel, PulseQueue& queue, pio_hw_t* pio,
+              uint8_t sm, uint pio_program_offset, float calThresholdOk, float calThresholdOver, uint16_t calOffPoint);
       ~Channel();
 
       Channel(const Channel&) = delete;
