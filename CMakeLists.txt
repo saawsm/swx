@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 # Pull in Pico SDK (must be before project) (environment variable PICO_SDK_PATH)
 include($ENV{PICO_SDK_PATH}/pico_sdk_init.cmake)
+
 project(swx
     VERSION 1.0
     HOMEPAGE_URL https://github.com/saawsm/swx 
@@ -14,12 +15,9 @@ project(swx
 # Init the Raspberry Pi Pico SDK
 pico_sdk_init()
 
-# ------------------------------------------------------------------------------
-
 add_executable(${PROJECT_NAME})
 
-pico_set_program_name(${PROJECT_NAME} ${PROJECT_NAME})
-pico_set_program_version(${PROJECT_NAME} ${PROJECT_VERSION})
+include(config.cmake)
 
 # Add source files.
 target_sources(${PROJECT_NAME}
@@ -55,6 +53,13 @@ target_link_libraries(${PROJECT_NAME}
         pico_multicore
 )
 
+target_compile_options(${PROJECT_NAME} PRIVATE
+    -Wall
+    -Wextra
+    -Wno-format # int != int32_t as far as the compiler is concerned because gcc has int32_t as long int
+)
+
+
 pico_set_program_name(${PROJECT_NAME} ${PROJECT_NAME})
 pico_set_program_version(${PROJECT_NAME} ${PROJECT_VERSION})
 
@@ -62,16 +67,7 @@ pico_enable_stdio_uart(${PROJECT_NAME} 0)
 pico_enable_stdio_usb(${PROJECT_NAME} 1)
 
 pico_set_float_implementation(${PROJECT_NAME} pico)
+# pico_set_binary_type(${PROJECT_NAME} no_flash)
 
 # Create map/bin/hex/uf2 files
 pico_add_extra_outputs(${PROJECT_NAME})
-
-
-target_compile_options(${PROJECT_NAME} PRIVATE
-    -Wall
-    -Wextra
-    -Wno-format # int != int32_t as far as the compiler is concerned because gcc has int32_t as long int
-)
-
-include(config.cmake)
-
