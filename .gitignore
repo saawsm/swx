@@ -1,5 +1,7 @@
 build/
 
+*.ignore
+
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json
