@@ -70,21 +70,26 @@ bool swx::Output::calibrateAll() {
 
 void swx::Output::process() {
    PulseQueue::Pulse pulse;
-   if (queue.dequeue(pulse) && pulse.channel < CHANNEL_COUNT) {
+   if (queue.dequeue(pulse) && pulse.channel < CHANNEL_COUNT)
       channels[pulse.channel]->immediatePulse(pulse.pos_us, pulse.neg_us);
-   }
 }
 
 void swx::Output::setPower(uint8_t channel, uint16_t power) {
-   channels[channel]->setPower(power);
+   if (channel < CHANNEL_COUNT)
+      channels[channel]->setPower(power);
 }
 
 void swx::Output::pulse(uint8_t channel, uint16_t pos_us, uint16_t neg_us) {
-   channels[channel]->pulse(pos_us, neg_us);
+   if (channel < CHANNEL_COUNT)
+      channels[channel]->pulse(pos_us, neg_us);
 }
 
 swx::Channel::Status swx::Output::getStatus(uint8_t channel) const {
-   return channels[channel]->getStatus();
+   if (channel < CHANNEL_COUNT) {
+      return channels[channel]->getStatus();
+   } else {
+      return swx::Channel::Status::INVALID;
+   }
 }
 
 void swx::Output::setPowerEnabled(bool enabled) {
