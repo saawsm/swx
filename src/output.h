@@ -4,12 +4,17 @@
 #include "swx.h"
 #include "channel.h"
 
-#include "queued_dac.h"
 #include "pulse_queue.h"
 
 #include <hardware/pio.h>
 
+#ifndef CHANNEL_COUNT
 #define CHANNEL_COUNT (4)
+#endif
+
+#if CHANNEL_COUNT < 1 || CHANNEL_COUNT > 4
+#error "swx only supports 1 to 4 output channels!"
+#endif
 
 #ifndef CH_ENABLED
    #define CH_ENABLED (0b1111)

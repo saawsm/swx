@@ -11,14 +11,22 @@ swx::Output::Output(PIO pio, Adc& adc, Dac& dac) : pio(pio) {
    // Max of 4 channels per pio program (4 state machines per PIO)
    pio_program_offset = pio_add_program(pio, &pulse_gen_program);
 
+#if CHANNEL_COUNT > 0
    channels[0] = new Channel(0, PIN_CH1_GA, PIN_CH1_GB, adc, CH1_ADC_ADDRESS, dac, CH1_DAC_ADDRESS, queue, pio, 0, pio_program_offset, CH1_CAL_THRESHOLD_OK,
                              CH1_CAL_THRESHOLD_OVER, CH1_CAL_OFF_POINT);
+   #if CHANNEL_COUNT > 1
    channels[1] = new Channel(1, PIN_CH2_GA, PIN_CH2_GB, adc, CH2_ADC_ADDRESS, dac, CH2_DAC_ADDRESS, queue, pio, 1, pio_program_offset, CH2_CAL_THRESHOLD_OK,
                              CH2_CAL_THRESHOLD_OVER, CH2_CAL_OFF_POINT);
+      #if CHANNEL_COUNT > 2
    channels[2] = new Channel(2, PIN_CH3_GA, PIN_CH3_GB, adc, CH3_ADC_ADDRESS, dac, CH3_DAC_ADDRESS, queue, pio, 2, pio_program_offset, CH3_CAL_THRESHOLD_OK,
                              CH3_CAL_THRESHOLD_OVER, CH3_CAL_OFF_POINT);
+         #if CHANNEL_COUNT > 3
    channels[3] = new Channel(3, PIN_CH4_GA, PIN_CH4_GB, adc, CH4_ADC_ADDRESS, dac, CH4_DAC_ADDRESS, queue, pio, 3, pio_program_offset, CH4_CAL_THRESHOLD_OK,
                              CH4_CAL_THRESHOLD_OVER, CH4_CAL_OFF_POINT);
+         #endif
+      #endif
+   #endif
+#endif
 }
 
 swx::Output::~Output() {

@@ -35,7 +35,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
   DAC_ADDRESS=0x60
 
    # -------- Channels --------
-   CH_ENABLED=0b1111 # Bitfield for enabled channels. LSB is 1st channel, MSB - last channel
+   CHANNEL_COUNT=4
    MINIMUM_PULSE_GAP_US=150
    #CH_IGNORE_CAL_ERRORS
    
