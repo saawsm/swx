@@ -7,18 +7,18 @@
 
 namespace swx {
 
-   struct Pulse {
-      uint8_t channel;
-      uint16_t pos_us;
-      uint16_t neg_us;
-   };
-
    class PulseQueue final {
       queue_t queue;
 
       uint32_t nextPulseTime;
 
    public:
+      struct Pulse {
+         uint8_t channel;
+         uint16_t pos_us;
+         uint16_t neg_us;
+      };
+
       bool isolated;
       uint16_t minimumPulseGap;
 
