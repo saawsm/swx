@@ -33,7 +33,7 @@ namespace swx {
 
       bool enqueue(uint8_t channel, uint16_t pos_us, uint16_t neg_us);
 
-      bool dequeue(Pulse* pulse);
+      bool dequeue(Pulse& pulse);
    };
 
 } // namespace swx

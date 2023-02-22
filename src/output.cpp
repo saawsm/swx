@@ -62,7 +62,7 @@ bool swx::Output::calibrateAll() {
 
 void swx::Output::process() {
    PulseQueue::Pulse pulse;
-   if (queue.dequeue(&pulse) && pulse.channel < CHANNEL_COUNT) {
+   if (queue.dequeue(pulse) && pulse.channel < CHANNEL_COUNT) {
       channels[pulse.channel]->immediatePulse(pulse.pos_us, pulse.neg_us);
    }
 }
