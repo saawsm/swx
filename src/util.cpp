@@ -11,14 +11,13 @@
 
 auto_init_mutex(mutex_i2c);
 
-void i2c_scan() {
+void i2c_scan(i2c_inst_t* i2c) {
    printf("Scanning for I2C devices...\n");
    printf("00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");
 
    for (uint8_t address = 0; address <= 0x7F; address++) {
-      if (address % 0x10 == 0) {
+      if (address % 0x10 == 0)
          printf("%02x ", address);
-      }
 
       // Perform one byte dummy read using the address.
       // If a slave acknowledges, the number of bytes transferred is returned.
@@ -29,7 +28,7 @@ void i2c_scan() {
       if ((address & 0x78) == 0 || (address & 0x78) == 0x78) // I2C reserves some addresses for special purposes. These are 1111XXX and 0000XXX.
          ret = PICO_ERROR_GENERIC;
       else
-         ret = i2c_read_blocking(I2C_PORT, address, &data, 1, false);
+         ret = i2c_read_blocking(i2c, address, &data, 1, false);
 
       printf(ret < 0 ? "." : "@");
       printf(address % 0x10 == 0x0F ? "\n" : "  ");

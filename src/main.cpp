@@ -62,7 +62,7 @@ int main() {
    gpio_set_function(PIN_SPI_CS, GPIO_FUNC_SPI);
 
    // Print I2C devices found on bus
-   i2c_scan();
+   i2c_scan(I2C_PORT);
 
    Adc* adc = new ADS1015(I2C_PORT, ADC_ADDRESS, ADS1015::GAIN_ONE, ADS1015::RATE_3300SPS);
    dac = new QueuedDac(new MCP4728(I2C_PORT, DAC_ADDRESS)); // queued dac for processing on core1, since setting each dac channel takes ~110us

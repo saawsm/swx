@@ -7,7 +7,7 @@
 
 #include <hardware/i2c.h>
 
-void i2c_scan();
+void i2c_scan(i2c_inst_t* i2c);
 
 void init_gpio(uint32_t pin, bool out, bool value);
 
