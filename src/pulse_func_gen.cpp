@@ -46,7 +46,7 @@ void swx::PulseFuncGenerator::process() {
    for (uint8_t channel = 0; channel < CHANNEL_COUNT; channel++) {
       ChannelInfo& ch = channels[channel];
 
-      if (ch.source == NONE)
+      if (ch.source == NONE || ch.powerModifier == 0.0f)
          continue;
 
       uint32_t time = time_us_32();
@@ -86,12 +86,12 @@ void swx::PulseFuncGenerator::process() {
             break;
       }
 
-      powerModifier *= channels[channel].powerModifier; // combine the channel power modifier with the 'state' power modifier
+      powerModifier *= ch.powerModifier; // combine the channel power modifier with the 'state' power modifier
 
       switch (ch.source) {
          case BASIC: { // basic pulse gen
             uint16_t power = getParameter(channel, POWER, VALUE);
-            if (power == 0 || powerModifier == 0.0f)
+            if (power == 0)
                break;
 
             // Set channel output power
