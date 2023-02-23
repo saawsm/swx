@@ -9,21 +9,21 @@ void swx::Protocol::parseCommand(Cli& cli, uint8_t ctrl) {
 
    switch ((ctrl & MSG_CMD_MASK) >> MSG_CMD) {
       case MSG_CMD_STATUS: { // respond with swx status information
-         uint8_t buffer[4] = {RES_START, 2, SWX_VERSION, CHANNEL_COUNT};
-         cli.writeBlocking(buffer, 4);
+         cli.writeBlocking({RES_START, MSG_CMD_STATUS, SWX_VERSION >> 8, SWX_VERSION & 0xff, CHANNEL_COUNT});
          break;
       }
       case MSG_CMD_PSU: { // get/set power supply enabled state
          if (isWrite) {
             output.setPowerEnabled(channel > 0);
          } else {
-            cli.writeResponse(output.isPowerEnabled());
+            cli.writeBlocking({RES_START, MSG_CMD_PSU, (uint8_t)output.isPowerEnabled()});
          }
          break;
       }
       case MSG_CMD_CH_STATUS: { // respond with channel status
          uint8_t status = (uint8_t)output.getStatus(channel);
-         cli.writeResponse(status);
+
+         cli.writeBlocking({RES_START, MSG_CMD_CH_STATUS, channel, status});
          break;
       }
       case MSG_CMD_CH_LL_PULSE: { // pulse channel with last used values if read mode
@@ -50,7 +50,7 @@ void swx::Protocol::parseCommand(Cli& cli, uint8_t ctrl) {
             cli.readBlocking(buffer, 1);
             funcGen.setSource(channel, static_cast<PulseFuncGenerator::PulseSrc>(buffer[0]));
          } else {
-            cli.writeResponse(funcGen.getSource(channel));
+            cli.writeBlocking({RES_START, MSG_CMD_CH_SRC, channel, funcGen.getSource(channel)});
          }
          break;
       }
@@ -74,8 +74,7 @@ void swx::Protocol::parseCommand(Cli& cli, uint8_t ctrl) {
 
             uint16_t ret = funcGen.getParameter(channel, static_cast<PulseFuncGenerator::Param>(param), static_cast<PulseFuncGenerator::Target>(target));
 
-            uint8_t buf[4] = {RES_START, 2, static_cast<uint8_t>(ret >> 8), static_cast<uint8_t>(ret & 0xff)};
-            cli.writeBlocking(buf, 4);
+            cli.writeBlocking({RES_START, MSG_CMD_CH_PARAM, channel, static_cast<uint8_t>(ret >> 8), static_cast<uint8_t>(ret & 0xff)});
          }
          break;
       }
@@ -90,8 +89,7 @@ void swx::Protocol::parseCommand(Cli& cli, uint8_t ctrl) {
          } else {
             uint16_t ret = funcGen.getPower(channel);
 
-            uint8_t buf[4] = {RES_START, 2, static_cast<uint8_t>(ret >> 8), static_cast<uint8_t>(ret & 0xff)};
-            cli.writeBlocking(buf, 4);
+            cli.writeBlocking({RES_START, MSG_CMD_CH_POWER, channel, static_cast<uint8_t>(ret >> 8), static_cast<uint8_t>(ret & 0xff)});
          }
          break;
       }

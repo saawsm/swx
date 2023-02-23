@@ -15,9 +15,8 @@ bool swx::Cli::process() {
    return true;
 }
 
-void swx::Cli::writeResponse(uint8_t res) {
-   uint8_t buf[3] = {RES_START, 1, res};
-   writeBlocking(buf, 3);
+void swx::Cli::writeBlocking(std::initializer_list<uint8_t> data) {
+   writeBlocking(data.begin(), data.size());
 }
 
 void swx::Cli::writeBlocking(const void* data, uint8_t size) {

@@ -3,6 +3,8 @@
 
 #include "../swx.h"
 
+#include <initializer_list>
+
 #define RES_START (245)
 
 namespace swx {
@@ -20,13 +22,14 @@ namespace swx {
 
       bool process();
 
+      void writeBlocking(std::initializer_list<uint8_t> data);
+      
       virtual void writeBlocking(const void* data, uint8_t size);
 
       virtual int readBlocking(uint8_t* data, uint8_t size);
 
       virtual bool isReadable() const;
 
-      void writeResponse(uint8_t res);
    };
 
 } // namespace swx
