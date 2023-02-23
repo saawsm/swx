@@ -148,8 +148,8 @@ void swx::PulseFuncGenerator::Parameter::update() {
    if (values[VALUE] <= values[MIN] || values[VALUE] >= values[MAX] || (step < 0 && values[VALUE] > oldValue) || (step > 0 && values[VALUE] < oldValue)) {
       switch (values[MODE]) {
          case UP_DOWN: {
-            step *= -1;
             values[VALUE] = step < 0 ? values[MIN] : values[MAX];
+            step *= -1;
             break;
          }
          case DOWN_RESET:
@@ -173,6 +173,8 @@ void swx::PulseFuncGenerator::Parameter::set(Target target, uint16_t value) {
 
    // Determine steps and update period based on cycle rate
    if (values[MODE] != DISABLED && values[RATE] != 0) {
+      const int8_t previousStep = step;
+
       step = 1; // start at 1 step for highest resolution
       while (step < 100) {
          uint32_t delta = (values[MAX] - values[MIN]) / step;
@@ -194,7 +196,7 @@ void swx::PulseFuncGenerator::Parameter::set(Target target, uint16_t value) {
          }
       }
 
-      if (values[MODE] == DOWN_RESET)
+      if (values[MODE] == DOWN_RESET || (values[MODE] == UP_DOWN && previousStep < 0))
          step = -step;
    }
 
