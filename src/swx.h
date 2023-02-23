@@ -7,7 +7,7 @@
 
 #include <pico/config.h>
 
-#define SWX_VERSION (1)
+#define SWX_VERSION (1000)
 
 #if !defined(PIN_LED) && defined(PICO_DEFAULT_LED_PIN)
    #define PIN_LED (PICO_DEFAULT_LED_PIN)
