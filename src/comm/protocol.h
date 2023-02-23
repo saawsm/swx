@@ -1,11 +1,11 @@
 #ifndef _PROTOCOL_H
 #define _PROTOCOL_H
 
-#include "swx.h"
+#include "../swx.h"
 
-#include "comms/cli.h"
-#include "output.h"
-#include "pulse_func_gen.h"
+#include "cli.h"
+#include "../output.h"
+#include "../pulse_func_gen.h"
 
 #include "message.h"
 

@@ -24,16 +24,16 @@ target_sources(${PROJECT_NAME}
     PRIVATE
         "src/main.cpp"
         "src/util.cpp"
-        "src/queued_dac.cpp"
         "src/pulse_queue.cpp"
         "src/channel.cpp"
         "src/output.cpp"
-        "src/protocol.cpp"
         "src/pulse_func_gen.cpp"
         "src/hardware/ads1015.cpp"
         "src/hardware/mcp4728.cpp"
-        "src/comms/cli.cpp"
-        "src/comms/cli_hardware.cpp"
+        "src/hardware/queued_dac.cpp"
+        "src/comm/cli.cpp"
+        "src/comm/cli_hardware.cpp"
+        "src/comm/protocol.cpp"
 )
 
 # Generate PIO headers (place them in the build/generated folder)

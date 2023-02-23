@@ -1,9 +1,9 @@
 #ifndef _QUEUED_DAC_H
 #define _QUEUED_DAC_H
 
-#include "swx.h"
+#include "../swx.h"
 
-#include "hardware/dac.h"
+#include "dac.h"
 
 #include <pico/util/queue.h>
 

@@ -11,10 +11,10 @@
 
 #include "hardware/mcp4728.h"
 #include "hardware/ads1015.h"
-#include "queued_dac.h"
+#include "hardware/queued_dac.h"
 
-#include "comms/cli_hardware.h"
-#include "protocol.h"
+#include "comm/cli_hardware.h"
+#include "comm/protocol.h"
 
 #include "output.h"
 #include "pulse_func_gen.h"
