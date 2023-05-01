@@ -1,26 +1,33 @@
 #ifndef _SWX_H
 #define _SWX_H
 
-#include <inttypes.h>
+#include <pico/stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
-#include <pico/config.h>
+#define SWX_VERSION (1100)
 
-#define SWX_VERSION (1000)
-
-#if !defined(PIN_LED) && defined(PICO_DEFAULT_LED_PIN)
-   #define PIN_LED (PICO_DEFAULT_LED_PIN)
-#else
-   #warning "PIN_LED undefined! LED disabled."
+#if defined(RASPBERRYPI_PICO)
+#define BOARD_PICO
+#elif defined(RASPBERRYPI_PICO_W)
+#define BOARD_PICO_W
 #endif
 
-#ifndef PIN_LED_OK
-   #warning "PIN_LED_OK undefined! OK LED disabled."
+#if !defined(PIN_LED) && defined(PICO_DEFAULT_LED_PIN)
+#define PIN_LED (PICO_DEFAULT_LED_PIN)
+#elif !defined(PIN_LED)
+#warning "PIN_LED undefined! LED disabled."
 #endif
 
 #ifndef PIN_REG_EN
-   #warning "PIN_REG_EN undefined! Assuming PSU always on."
+#warning "PIN_REG_EN undefined! Assuming PSU always on."
 #endif
+
+#define LOG_INFO(...) printf(__VA_ARGS__)
+#define LOG_DEBUG(...) printf(__VA_ARGS__)
+#define LOG_FINE(...) printf(__VA_ARGS__)
+
+#define LOG_WARN(...) printf(__VA_ARGS__)
+#define LOG_ERROR(...) printf(__VA_ARGS__)
 
 #endif // _SWX_H

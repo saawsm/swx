@@ -1,23 +1,27 @@
-#include "util.h"
+#include "i2c.h"
 
-#include <stdio.h>
+#include "../swx.h"
 
-#include <pico/stdlib.h>
 #include <pico/mutex.h>
 
-#ifndef I2C_MUTEX_TIMEOUT
-   #define I2C_MUTEX_TIMEOUT (5000)
+#ifdef I2C_MUTEX_TIMEOUT
+auto_init_mutex(mutex_i2c);
 #endif
 
-auto_init_mutex(mutex_i2c);
-
 void i2c_scan(i2c_inst_t* i2c) {
-   printf("Scanning for I2C devices...\n");
-   printf("00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");
+   LOG_DEBUG("Scanning for I2C devices...\n");
+   LOG_DEBUG("00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");
+
+#ifdef I2C_MUTEX_TIMEOUT
+   if (!mutex_enter_timeout_us(&mutex_i2c, I2C_MUTEX_TIMEOUT)) {
+      LOG_WARN("i2c_write: mutex timeout\n");
+      return -1;
+   }
+#endif
 
    for (uint8_t address = 0; address <= 0x7F; address++) {
       if (address % 0x10 == 0)
-         printf("%02x ", address);
+         LOG_DEBUG("%02x ", address);
 
       // Perform one byte dummy read using the address.
       // If a slave acknowledges, the number of bytes transferred is returned.
@@ -30,48 +34,45 @@ void i2c_scan(i2c_inst_t* i2c) {
       else
          ret = i2c_read_blocking(i2c, address, &data, 1, false);
 
-      printf(ret < 0 ? "." : "@");
-      printf(address % 0x10 == 0x0F ? "\n" : "  ");
+      LOG_DEBUG(ret < 0 ? "." : "@");
+      LOG_DEBUG(address % 0x10 == 0x0F ? "\n" : "  ");
    }
 
-   printf("Done.\n");
-}
+#ifdef I2C_MUTEX_TIMEOUT
+   mutex_exit(&mutex_i2c);
+#endif
 
-void init_gpio(uint32_t pin, bool out, bool value) {
-   gpio_init(pin);
-   gpio_set_dir(pin, out);
-   gpio_put(pin, value);
-}
-
-void blink_led_infinite_loop(uint32_t pin, uint32_t delay_ms) {
-   bool state = !gpio_get(pin);
-   while (true) {
-      gpio_put(pin, state);
-      sleep_ms(delay_ms);
-      state = !state;
-   }
+   LOG_DEBUG("Done.\n");
 }
 
 int i2c_write(i2c_inst_t* i2c, uint8_t addr, const uint8_t* src, size_t len, bool nostop, uint timeout_us) {
+#ifdef I2C_MUTEX_TIMEOUT
    if (!mutex_enter_timeout_us(&mutex_i2c, I2C_MUTEX_TIMEOUT)) {
-      printf("i2c_write: mutex timeout\n");
+      LOG_WARN("i2c_write: mutex timeout\n");
       return -1;
    }
+#endif
 
    int ret = i2c_write_timeout_us(i2c, addr, src, len, nostop, timeout_us);
 
+#ifdef I2C_MUTEX_TIMEOUT
    mutex_exit(&mutex_i2c);
+#endif
    return ret;
 }
 
 int i2c_read(i2c_inst_t* i2c, uint8_t addr, uint8_t* dst, size_t len, bool nostop, uint timeout_us) {
+#ifdef I2C_MUTEX_TIMEOUT
    if (!mutex_enter_timeout_us(&mutex_i2c, I2C_MUTEX_TIMEOUT)) {
-      printf("i2c_read: mutex timeout\n");
+      LOG_WARN("i2c_write: mutex timeout\n");
       return -1;
    }
+#endif
 
    int ret = i2c_read_timeout_us(i2c, addr, dst, len, nostop, timeout_us);
 
+#ifdef I2C_MUTEX_TIMEOUT
    mutex_exit(&mutex_i2c);
+#endif
    return ret;
 }

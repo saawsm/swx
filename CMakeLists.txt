@@ -22,22 +22,13 @@ include(config.cmake)
 # Add source files.
 target_sources(${PROJECT_NAME}
     PRIVATE
-        "src/main.cpp"
-        "src/util.cpp"
-        "src/pulse_queue.cpp"
-        "src/channel.cpp"
-        "src/output.cpp"
-        "src/pulse_func_gen.cpp"
-        "src/hardware/ads1015.cpp"
-        "src/hardware/mcp4728.cpp"
-        "src/hardware/queued_dac.cpp"
-        "src/comm/cli.cpp"
-        "src/comm/cli_hardware.cpp"
-        "src/comm/protocol.cpp"
+        "src/main.c"
+        "src/util/i2c.c"
 )
 
 # Generate PIO headers (place them in the build/generated folder)
 pico_generate_pio_header(${PROJECT_NAME} ../src/pio/pulse_gen.pio OUTPUT_DIR build/generated)
+# pico_generate_pio_header(${PROJECT_NAME} ../src/pio/i2s.pio OUTPUT_DIR build/generated)
 
 # Link the pico standard library 
 target_link_libraries(${PROJECT_NAME} PRIVATE pico_stdlib)
@@ -66,7 +57,8 @@ pico_set_program_version(${PROJECT_NAME} ${PROJECT_VERSION})
 pico_enable_stdio_uart(${PROJECT_NAME} 0)
 pico_enable_stdio_usb(${PROJECT_NAME} 1)
 
-pico_set_float_implementation(${PROJECT_NAME} pico)
+# pico_set_float_implementation(${PROJECT_NAME} pico)
+
 # pico_set_binary_type(${PROJECT_NAME} no_flash)
 
 # Create map/bin/hex/uf2 files
