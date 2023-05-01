@@ -2,7 +2,7 @@
 BasedOnStyle: LLVM
 AccessModifierOffset: '-3'
 AllowShortFunctionsOnASingleLine: Inline
-ColumnLimit: '160'
+ColumnLimit: '170'
 IndentCaseLabels: 'true'
 IndentWidth: '3'
 PointerAlignment: Left

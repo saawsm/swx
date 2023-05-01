@@ -23,12 +23,16 @@ include(config.cmake)
 target_sources(${PROJECT_NAME}
     PRIVATE
         "src/main.c"
+        "src/output.c"
+        "src/channel.c"
         "src/util/i2c.c"
 )
 
+target_sources(${PROJECT_NAME} PRIVATE "src/hardware/mcp4728.c")
+target_sources(${PROJECT_NAME} PRIVATE "src/hardware/ads1015.c")
+
 # Generate PIO headers (place them in the build/generated folder)
 pico_generate_pio_header(${PROJECT_NAME} ../src/pio/pulse_gen.pio OUTPUT_DIR build/generated)
-# pico_generate_pio_header(${PROJECT_NAME} ../src/pio/i2s.pio OUTPUT_DIR build/generated)
 
 # Link the pico standard library 
 target_link_libraries(${PROJECT_NAME} PRIVATE pico_stdlib)
