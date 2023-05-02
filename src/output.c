@@ -6,8 +6,6 @@
 #include "util/i2c.h"
 #include "util/gpio.h"
 
-#include "pulse_gen.pio.h"
-
 queue_t pulse_queue;
 queue_t power_queue;
 

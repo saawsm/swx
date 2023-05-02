@@ -105,7 +105,7 @@ static uint16_t read_register(uint8_t reg) {
 
    ret = i2c_read(I2C_PORT, ADC_ADDRESS, buffer, 2, false, I2C_DEVICE_TIMEOUT);
    if (ret < 0) {
-      LOG_ERROR("[ADS1015::readRegister] I2C read failed! ret=%d\n", ret);
+      LOG_ERROR("ADS1015 - read_register: I2C read failed! ret=%d\n", ret);
       return 0;
    }
 
