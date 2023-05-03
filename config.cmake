@@ -40,14 +40,14 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 
     # -------- Channels --------
     CHANNEL_COUNT=4
-
     #CH_CAL_IGNORE_ERRORS
  
     # USE_ADC_MEAN  # Uncomment to use trimmed mean for ADC samples. Not recommended for I2C ADCs (e.g. ADS1015) since sampling takes too long
     ADC_MEAN=10
     ADC_MEAN_TRIM_AMOUNT=2
 
-    # Channel defualts (if unspecified by channel)
+    # Channel Defaults
+    # Use CHn_CAL_ for channel specific overrides
     CH_CAL_THRESHOLD_OK=0.15f
     CH_CAL_THRESHOLD_OVER=0.18f
     CH_CAL_OFFSET=400
@@ -58,19 +58,11 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     CH1_DAC_CHANNEL=0
     CH1_ADC_CHANNEL=0
 
-    # CH1_CAL_THRESHOLD_OK=0.15f
-    # CH1_CAL_THRESHOLD_OVER=0.18f
-    # CH1_CAL_OFFSET=400
-
     # -------- Channel 2 --------
     PIN_CH2_GA=10
     PIN_CH2_GB=11
     CH2_DAC_CHANNEL=1
     CH2_ADC_CHANNEL=1
-
-    # CH2_CAL_THRESHOLD_OK=0.15f
-    # CH2_CAL_THRESHOLD_OVER=0.18f
-    # CH2_CAL_OFFSET=400
 
     # -------- Channel 3 --------
     PIN_CH3_GA=8
@@ -78,18 +70,10 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     CH3_DAC_CHANNEL=2
     CH3_ADC_CHANNEL=2
 
-    # CH3_CAL_THRESHOLD_OK=0.15f
-    # CH3_CAL_THRESHOLD_OVER=0.18f
-    # CH3_CAL_OFFSET=400
-
     # -------- Channel 4 --------
     PIN_CH4_GA=6
     PIN_CH4_GB=7    
     CH4_DAC_CHANNEL=3
     CH4_ADC_CHANNEL=3
    
-    # CH4_CAL_THRESHOLD_OK=0.15f
-    # CH4_CAL_THRESHOLD_OVER=0.18f
-    # CH4_CAL_OFFSET=400
-
 )
