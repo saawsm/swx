@@ -7,10 +7,6 @@
 #define CHANNEL_COUNT (4)
 #endif
 
-#ifndef CH_ENABLED
-#define CH_ENABLED (0xff)
-#endif
-
 typedef struct {
    uint8_t channel;
    uint16_t power;
@@ -35,6 +31,9 @@ void output_process_power();
 
 bool output_pulse(uint8_t channel, uint16_t pos_us, uint16_t neg_us, uint32_t abs_time_us);
 void output_set_power(uint8_t channel, uint16_t power);
+
+void output_set_power_level(uint8_t channel, uint16_t power_level);
+uint16_t output_power_level(uint8_t channel);
 
 void output_set_gen_enabled(uint8_t channel, bool enabled, uint16_t turn_off_delay_ms);
 

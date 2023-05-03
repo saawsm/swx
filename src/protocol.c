@@ -45,52 +45,70 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
       }
 
       case MSG_CMD_PSU: { // Power Supply State - R/W
+         bool enabled;
 
          if (write) {
-            LOG_FINE_MSG("MSG_CMD_PSU: W:%u, MP:%u\n", write, mp);
-            set_power_enabled(mp);            
+            enabled = mp > 0;
+            set_power_enabled(enabled);
          } else {
-            const bool enabled = is_power_enabled();
-
-            LOG_FINE_MSG("MSG_CMD_PSU: W:%u, VAL:%u\n", write, enabled);
+            enabled = is_power_enabled();
             REPLY_MSG(enabled);
          }
+
+         LOG_FINE_MSG("MSG_CMD_PSU: W:%u, VAL:%u\n", write, enabled);
          break;
       }
 
       case MSG_CMD_CH_STATUS: { // Channel Status - RO
          LOG_FINE_MSG("MSG_CMD_CH_STATUS...\n");
 
-         if (mp < CHANNEL_COUNT) {
-            const uint8_t status = output_status(mp);
+         const uint8_t status = output_status(mp);
 
-            LOG_FINE_MSG("MSG_CMD_CH_STATUS: MP:%u, VAL:%u\n", mp, status);
-            REPLY_MSG(status);
-         }
+         LOG_FINE_MSG("MSG_CMD_CH_STATUS: MP:%u, VAL:%u\n", mp, status);
+         REPLY_MSG(mp, status);
          break;
       }
 
       case MSG_CMD_CH_EN: { // Channel Enabled State (R/W)
          LOG_FINE_MSG("MSG_CMD_CH_EN...\n");
 
-         if (mp < CHANNEL_COUNT) {
+         bool enabled;
+
+         if (write) {
             uint8_t buffer[1];
             read_blocking(origin, buffer, sizeof(buffer));
 
-            const bool enabled = buffer[0];
+            enabled = buffer[0];
 
-            LOG_FINE_MSG("MSG_CMD_CH_EN: MP:%u, VAL:%u, TOD:%u\n", mp, enabled, 0);
+            output_set_gen_enabled(mp, enabled, 0); // TODO: Add support for turn_off_delay_ms for MSG_CMD_CH_EN
+         } else {
+            enabled = output_gen_enabled(mp);
 
-            if (write) {
-               output_set_gen_enabled(mp, enabled, 0); // TODO: Add support for turn_off_delay_ms for MSG_CMD_CH_EN
-            } else {
-               REPLY_MSG(output_gen_enabled(mp));
-            }
+            REPLY_MSG(mp, enabled);
          }
+
+         LOG_FINE_MSG("MSG_CMD_CH_EN: W:%u MP:%u, VAL:%u, TOD:%u\n", write, mp, enabled, 0);
          break;
       }
 
       case MSG_CMD_CH_POWER: { // Channel Power Level Percent (R/W)
+         LOG_FINE_MSG("MSG_CMD_CH_POWER...\n");
+
+         uint16_t val;
+
+         if (write) {
+            uint8_t buffer[2];
+            read_blocking(origin, buffer, sizeof(buffer));
+
+            val = (buffer[0] << 8 | buffer[1]);
+
+            output_set_power_level(mp, val);
+         } else {
+            val = output_power_level(mp);
+            REPLY_MSG(mp, HL16(val));
+         }
+
+         LOG_FINE_MSG("MSG_CMD_CH_POWER: W:%u MP:%u VAL:%u\n", write, mp, val);
          break;
       }
 
@@ -112,11 +130,9 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
             lastPulseWidth = (buffer[0] << 8 | buffer[1]);
          }
 
-         if (mp < CHANNEL_COUNT) {
-            LOG_FINE_MSG("MSG_CMD_CH_LL_PULSE: W:%u MP:%u, VAL:%u\n", write, mp, lastPulseWidth);
+         LOG_FINE_MSG("MSG_CMD_CH_LL_PULSE: W:%u MP:%u, VAL:%u\n", write, mp, lastPulseWidth);
 
-            output_pulse(mp, lastPulseWidth, lastPulseWidth, time_us_32());
-         }
+         output_pulse(mp, lastPulseWidth, lastPulseWidth, time_us_32());
          break;
       }
 
@@ -126,12 +142,10 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
          uint8_t buffer[2];
          read_blocking(origin, buffer, sizeof(buffer));
 
-         if (mp < CHANNEL_COUNT) {
-            const uint16_t val = (buffer[0] << 8 | buffer[1]);
+         const uint16_t val = (buffer[0] << 8 | buffer[1]);
 
-            LOG_FINE_MSG("MSG_CMD_CH_LL_POWER: MP:%u, VAL:%u\n", mp, val);
-            output_set_power(mp, val);
-         }
+         LOG_FINE_MSG("MSG_CMD_CH_LL_POWER: MP:%u, VAL:%u\n", mp, val);
+         output_set_power(mp, val);
          break;
       }
 

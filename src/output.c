@@ -6,6 +6,10 @@
 #include "util/i2c.h"
 #include "util/gpio.h"
 
+#ifndef CH_CAL_ENABLED
+#define CH_CAL_ENABLED (0xff) // Channel mask: channels to calibrate when calibrating all channels
+#endif
+
 queue_t pulse_queue;
 queue_t power_queue;
 
@@ -69,7 +73,7 @@ bool output_calibrate_all() {
 
    bool success = true;
    for (uint8_t index = 0; index < CHANNEL_COUNT; index++) {
-      if (((CH_ENABLED >> index) & 1) == 0) // Skip calibration for disabled channel slots
+      if (((CH_CAL_ENABLED >> index) & 1) == 0) // Skip calibration for disabled channel slots
          continue;
       success &= (channel_calibrate(&channels[index]) == CHANNEL_READY);
    }
@@ -104,6 +108,8 @@ void output_process_power() {
 }
 
 bool output_pulse(uint8_t channel, uint16_t pos_us, uint16_t neg_us, uint32_t abs_time_us) {
+   if (channel >= CHANNEL_COUNT)
+      return;
    pulse_t pulse = {
        .channel = channel,
        .pos_us = pos_us,
@@ -114,20 +120,40 @@ bool output_pulse(uint8_t channel, uint16_t pos_us, uint16_t neg_us, uint32_t ab
 }
 
 void output_set_power(uint8_t channel, uint16_t power) {
+   if (channel >= CHANNEL_COUNT)
+      return;
    pwr_cmd_t cmd = {.channel = channel, .power = power};
    queue_try_add(&power_queue, &cmd);
 }
 
+void output_set_power_level(uint8_t channel, uint16_t power_level) {
+   if (channel >= CHANNEL_COUNT)
+      return;
+   channels[channel].power_level = power_level;
+}
+
 void output_set_gen_enabled(uint8_t channel, bool enabled, uint16_t turn_off_delay_ms) {
+  if (channel >= CHANNEL_COUNT)
+      return false;
    channel_set_gen_enabled(&channels[channel], enabled, turn_off_delay_ms);
 }
 
 channel_status_t output_status(uint8_t channel) {
+   if (channel >= CHANNEL_COUNT)
+      return CHANNEL_UNKNOWN;
    return channels[channel].status;
 }
 
 bool output_gen_enabled(uint8_t channel) {
+   if (channel >= CHANNEL_COUNT)
+      return false;
    return channels[channel].gen_enabled;
+}
+
+uint16_t output_power_level(uint8_t channel) {
+     if (channel >= CHANNEL_COUNT)
+      return 0;
+   return channels[channel].power_level;
 }
 
 void set_power_enabled(bool enabled) {

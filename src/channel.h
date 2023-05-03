@@ -14,7 +14,8 @@
    }
 
 typedef enum {
-   CHANNEL_INVALID = 0,
+   CHANNEL_UNKNOWN = 0,
+   CHANNEL_INVALID,
    CHANNEL_FAULT,
    CHANNEL_UNCALIBRATED,
    CHANNEL_CALIBRATING,
@@ -39,7 +40,9 @@ typedef struct {
 
    channel_status_t status;
 
-   bool gen_enabled;     // If true, pulse and power from pulse generator will be output to channel
+   bool gen_enabled;                     // If true, pulse and power from pulse generator will be output to channel
+
+   uint16_t power_level;                 // The power level of the channel in percent (scales the power level dynamic parameter)
 
    uint16_t power_level; // The power level of the channel in percent (scales the power level dynamic parameter)
 
