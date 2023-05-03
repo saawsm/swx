@@ -68,7 +68,7 @@ bool output_calibrate_all() {
    while (queue_try_remove(&power_queue, &cmd))
       tight_loop_contents();
 
-   const bool powerWasOn = is_power_enabled();
+   const bool powerWasOn = is_psu_enabled();
    set_psu_enabled(true);
 
    bool success = true;
