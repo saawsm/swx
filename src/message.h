@@ -62,4 +62,9 @@ Note:
 
 #define MSG_CMD_AI_READ (9)     // Read Audio Input (RO)
 
-#endif                          // _MESSAGES_H
+// ----------------------------------------------------------------------------------------------------
+
+#define MSG_CTRL(mode, cmd, mp) ((mode) << MSG_MODE) | ((cmd) << MSG_CMD) | ((mp) << MSG_MP)
+#define HL16(number) ((number) >> 8), ((number)&0xff)
+
+#endif // _MESSAGES_H
