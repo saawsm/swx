@@ -7,6 +7,7 @@
 #include <hardware/spi.h>
 
 #include "output.h"
+#include "pulse_gen.h"
 #include "protocol.h"
 
 #include "util/i2c.h"
@@ -80,6 +81,7 @@ int main() {
 
    while (true) {
       protocol_process(MSG_CH_SPI | MSG_CH_UART | MSG_CH_STDIO);
+      pulse_gen_process();
       output_process_pulses();
    }
 

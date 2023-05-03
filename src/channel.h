@@ -2,6 +2,7 @@
 #define _CHANNEL_H
 
 #include "swx.h"
+#include "parameter.h"
 
 #include <hardware/pio.h>
 
@@ -44,7 +45,11 @@ typedef struct {
 
    uint16_t power_level;                 // The power level of the channel in percent (scales the power level dynamic parameter)
 
-   uint16_t power_level; // The power level of the channel in percent (scales the power level dynamic parameter)
+   parameter_t parameters[TOTAL_PARAMS]; // Dynamic parameters // TODO: Setup default parameter values
+
+   uint32_t next_pulse_time_us;
+   uint32_t next_state_time_us;
+   uint8_t state_index;
 
 } channel_t;
 
