@@ -49,9 +49,9 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
 
          if (write) {
             enabled = mp > 0;
-            set_power_enabled(enabled);
+            set_psu_enabled(enabled);
          } else {
-            enabled = is_power_enabled();
+            enabled = is_psu_enabled();
             REPLY_MSG(enabled);
          }
 
@@ -61,11 +61,12 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
 
       case MSG_CMD_CH_STATUS: { // Channel Status - RO
          LOG_FINE_MSG("MSG_CMD_CH_STATUS...\n");
+         if (mp < CHANNEL_COUNT) {
+            const uint8_t status = channels[mp].status;
 
-         const uint8_t status = output_status(mp);
-
-         LOG_FINE_MSG("MSG_CMD_CH_STATUS: MP:%u, VAL:%u\n", mp, status);
-         REPLY_MSG(mp, status);
+            LOG_FINE_MSG("MSG_CMD_CH_STATUS: MP:%u, VAL:%u\n", mp, status);
+            REPLY_MSG(mp, status);
+         }
          break;
       }
 
@@ -78,11 +79,17 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
             uint8_t buffer[1];
             read_blocking(origin, buffer, sizeof(buffer));
 
+            if (mp >= CHANNEL_COUNT)
+               break;
+
             enabled = buffer[0];
 
-            output_set_gen_enabled(mp, enabled, 0); // TODO: Add support for turn_off_delay_ms for MSG_CMD_CH_EN
+            channel_set_gen_enabled(&channels[mp], enabled, 0); // TODO: Add support for turn_off_delay_ms for MSG_CMD_CH_EN
          } else {
-            enabled = output_gen_enabled(mp);
+            if (mp >= CHANNEL_COUNT)
+               break;
+
+            enabled = channels[mp].gen_enabled;
 
             REPLY_MSG(mp, enabled);
          }
@@ -100,11 +107,17 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
             uint8_t buffer[2];
             read_blocking(origin, buffer, sizeof(buffer));
 
+            if (mp >= CHANNEL_COUNT)
+               break;
+
             val = (buffer[0] << 8 | buffer[1]);
 
-            output_set_power_level(mp, val);
+            channels[mp].power_level = val;
          } else {
-            val = output_power_level(mp);
+            if (mp >= CHANNEL_COUNT)
+               break;
+
+            val = channels[mp].power_level;
             REPLY_MSG(mp, HL16(val));
          }
 

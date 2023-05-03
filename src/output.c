@@ -13,7 +13,7 @@
 queue_t pulse_queue;
 queue_t power_queue;
 
-static channel_t channels[CHANNEL_COUNT] = {
+channel_t channels[CHANNEL_COUNT] = {
     CH(PIN_CH1_GA, PIN_CH1_GB, CH1_DAC_CHANNEL, CH1_ADC_CHANNEL, pio0, 0, CH1_CAL_THRESHOLD_OK, CH1_CAL_THRESHOLD_OVER, CH1_CAL_OFFSET),
 #if CHANNEL_COUNT > 1
     CH(PIN_CH2_GA, PIN_CH2_GB, CH2_DAC_CHANNEL, CH2_ADC_CHANNEL, pio0, 1, CH2_CAL_THRESHOLD_OK, CH2_CAL_THRESHOLD_OVER, CH2_CAL_OFFSET),
@@ -36,7 +36,7 @@ void output_init() {
 #ifdef PIN_REG_EN
    init_gpio(PIN_REG_EN, GPIO_OUT, 0);
 #endif
-   set_power_enabled(false);
+   set_psu_enabled(false);
 
    queue_init(&pulse_queue, sizeof(pulse_t), 10);
 
@@ -51,7 +51,7 @@ void output_init() {
 
 void output_free() {
    LOG_DEBUG("Freeing output...\n");
-   set_power_enabled(false);
+   set_psu_enabled(false);
 
    queue_free(&pulse_queue);
    queue_free(&power_queue);
@@ -69,7 +69,7 @@ bool output_calibrate_all() {
       tight_loop_contents();
 
    const bool powerWasOn = is_power_enabled();
-   set_power_enabled(true);
+   set_psu_enabled(true);
 
    bool success = true;
    for (uint8_t index = 0; index < CHANNEL_COUNT; index++) {
@@ -78,7 +78,7 @@ bool output_calibrate_all() {
       success &= (channel_calibrate(&channels[index]) == CHANNEL_READY);
    }
 
-   set_power_enabled(success && powerWasOn);
+   set_psu_enabled(success && powerWasOn);
 
    if (success) {
       LOG_INFO("Calibration successful!\n");
@@ -91,7 +91,7 @@ bool output_calibrate_all() {
 
 void output_process_pulses() {
    if (fetch_pulse) {
-      if (queue_try_remove(&pulse_queue, &pulse)) {
+      if (queue_try_remove(&pulse_queue, &pulse) && pulse.channel < CHANNEL_COUNT) {
          if (pulse.abs_time_us < time_us_32() + 1000000ul) // ignore pulses with wait times above 1 second
             fetch_pulse = false;
       }
@@ -108,8 +108,6 @@ void output_process_power() {
 }
 
 bool output_pulse(uint8_t channel, uint16_t pos_us, uint16_t neg_us, uint32_t abs_time_us) {
-   if (channel >= CHANNEL_COUNT)
-      return;
    pulse_t pulse = {
        .channel = channel,
        .pos_us = pos_us,
@@ -120,45 +118,13 @@ bool output_pulse(uint8_t channel, uint16_t pos_us, uint16_t neg_us, uint32_t ab
 }
 
 void output_set_power(uint8_t channel, uint16_t power) {
-   if (channel >= CHANNEL_COUNT)
-      return;
    pwr_cmd_t cmd = {.channel = channel, .power = power};
    queue_try_add(&power_queue, &cmd);
 }
 
-void output_set_power_level(uint8_t channel, uint16_t power_level) {
-   if (channel >= CHANNEL_COUNT)
-      return;
-   channels[channel].power_level = power_level;
-}
-
-void output_set_gen_enabled(uint8_t channel, bool enabled, uint16_t turn_off_delay_ms) {
-  if (channel >= CHANNEL_COUNT)
-      return false;
-   channel_set_gen_enabled(&channels[channel], enabled, turn_off_delay_ms);
-}
-
-channel_status_t output_status(uint8_t channel) {
-   if (channel >= CHANNEL_COUNT)
-      return CHANNEL_UNKNOWN;
-   return channels[channel].status;
-}
-
-bool output_gen_enabled(uint8_t channel) {
-   if (channel >= CHANNEL_COUNT)
-      return false;
-   return channels[channel].gen_enabled;
-}
-
-uint16_t output_power_level(uint8_t channel) {
-     if (channel >= CHANNEL_COUNT)
-      return 0;
-   return channels[channel].power_level;
-}
-
-void set_power_enabled(bool enabled) {
+void set_psu_enabled(bool enabled) {
 #ifdef PIN_REG_EN
-   const bool oldState = is_power_enabled();
+   const bool oldState = is_psu_enabled();
 
    gpio_put(PIN_REG_EN, enabled);
 
@@ -173,7 +139,7 @@ void set_power_enabled(bool enabled) {
 #endif
 }
 
-bool is_power_enabled() {
+bool is_psu_enabled() {
 #ifdef PIN_REG_EN
    return gpio_get(PIN_REG_EN);
 #else
