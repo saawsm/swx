@@ -64,6 +64,8 @@ void channel_init(channel_t* ch) {
    pio_sm_counters[pio_index]++; // Increment counter so we know PIO program is in use
 
    ch->status = CHANNEL_UNCALIBRATED;
+   ch->gen_enabled = true;
+   ch->power_level = 0;
 }
 
 void channel_free(channel_t* ch) {
@@ -93,6 +95,8 @@ void channel_free(channel_t* ch) {
    set_dac_direct(ch->dac_channel, DAC_MAX_VALUE);
 
    ch->status = CHANNEL_INVALID;
+   ch->gen_enabled = false;
+   ch->power_level = 0;
 }
 
 channel_status_t channel_calibrate(channel_t* ch) {
@@ -235,4 +239,21 @@ static float read_voltage(channel_t* ch) {
    adc_read_counts(ch->adc_channel, &counts);
 #endif
    return adc_compute_volts(counts);
+}
+
+static int64_t disable_gen_alarm_cb(alarm_id_t id, void* user_data) {
+   (void)id;
+   if (user_data)
+      *((bool*)user_data) = false;
+   return 0;
+}
+
+void channel_set_gen_enabled(channel_t* ch, bool enabled, uint16_t turn_off_delay_ms) {
+   if (ch->gen_enabled != enabled) {
+      if (!enabled && turn_off_delay_ms > 0) {
+         add_alarm_in_ms(turn_off_delay_ms, disable_gen_alarm_cb, &ch->gen_enabled, true);
+      } else {
+         ch->gen_enabled = enabled;
+      }
+   }
 }

@@ -26,8 +26,11 @@
 #define LOG_INFO(...) printf(__VA_ARGS__)
 #define LOG_DEBUG(...) printf(__VA_ARGS__)
 #define LOG_FINE(...) printf(__VA_ARGS__)
+#define LOG_FINE_MSG(...) printf(__VA_ARGS__)
 
 #define LOG_WARN(...) printf(__VA_ARGS__)
 #define LOG_ERROR(...) printf(__VA_ARGS__)
+
+#define HZ_TO_US(hz) (1000000ul / (hz))
 
 #endif // _SWX_H

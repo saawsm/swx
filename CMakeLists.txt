@@ -25,6 +25,7 @@ target_sources(${PROJECT_NAME}
         "src/main.c"
         "src/output.c"
         "src/channel.c"
+        "src/protocol.c"
         "src/util/i2c.c"
 )
 

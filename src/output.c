@@ -118,6 +118,18 @@ void output_set_power(uint8_t channel, uint16_t power) {
    queue_try_add(&power_queue, &cmd);
 }
 
+void output_set_gen_enabled(uint8_t channel, bool enabled, uint16_t turn_off_delay_ms) {
+   channel_set_gen_enabled(&channels[channel], enabled, turn_off_delay_ms);
+}
+
+channel_status_t output_status(uint8_t channel) {
+   return channels[channel].status;
+}
+
+bool output_gen_enabled(uint8_t channel) {
+   return channels[channel].gen_enabled;
+}
+
 void set_power_enabled(bool enabled) {
 #ifdef PIN_REG_EN
    const bool oldState = is_power_enabled();
