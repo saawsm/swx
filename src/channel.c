@@ -240,20 +240,3 @@ static float read_voltage(channel_t* ch) {
 #endif
    return adc_compute_volts(counts);
 }
-
-static int64_t disable_gen_alarm_cb(alarm_id_t id, void* user_data) {
-   (void)id;
-   if (user_data)
-      *((bool*)user_data) = false;
-   return 0;
-}
-
-void channel_set_gen_enabled(channel_t* ch, bool enabled, uint16_t turn_off_delay_ms) {
-   if (ch->gen_enabled != enabled) {
-      if (!enabled && turn_off_delay_ms > 0) {
-         add_alarm_in_ms(turn_off_delay_ms, disable_gen_alarm_cb, &ch->gen_enabled, true);
-      } else {
-         ch->gen_enabled = enabled;
-      }
-   }
-}

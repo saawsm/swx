@@ -38,7 +38,7 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
 
    switch (cmd) {
       case MSG_CMD_STATUS: { // SWX Status - RO
-         LOG_FINE_MSG("MSG_CMD_STATUS\n");
+         LOG_FINE_MSG("MSG_CMD_STATUS: VER: %u, CHC: %u\n", SWX_VERSION, CHANNEL_COUNT);
 
          REPLY_MSG(SWX_VERSION >> 8, SWX_VERSION & 0xff, CHANNEL_COUNT);
          break;
@@ -74,17 +74,16 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
          LOG_FINE_MSG("MSG_CMD_CH_EN...\n");
 
          bool enabled;
+         uint16_t tod_ms;
 
          if (write) {
             uint8_t buffer[1];
             read_blocking(origin, buffer, sizeof(buffer));
 
-            if (mp >= CHANNEL_COUNT)
-               break;
-
             enabled = buffer[0];
+            tod_ms = 0; // TODO: Add support for turn_off_delay_ms for MSG_CMD_CH_EN
 
-            channel_set_gen_enabled(&channels[mp], enabled, 0); // TODO: Add support for turn_off_delay_ms for MSG_CMD_CH_EN
+            output_set_gen_enabled(mp, enabled, tod_ms);
          } else {
             if (mp >= CHANNEL_COUNT)
                break;
@@ -94,7 +93,7 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
             REPLY_MSG(mp, enabled);
          }
 
-         LOG_FINE_MSG("MSG_CMD_CH_EN: W:%u MP:%u, VAL:%u, TOD:%u\n", write, mp, enabled, 0);
+         LOG_FINE_MSG("MSG_CMD_CH_EN: W:%u MP:%u, VAL:%u, TOD:%u\n", write, mp, enabled, tod_ms);
          break;
       }
 
@@ -143,7 +142,7 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
             lastPulseWidth = (buffer[0] << 8 | buffer[1]);
          }
 
-         LOG_FINE_MSG("MSG_CMD_CH_LL_PULSE: W:%u MP:%u, VAL:%u\n", write, mp, lastPulseWidth);
+         LOG_FINE_MSG("MSG_CMD_CH_LL_PULSE: W:%u MP:%u, PW:%u\n", write, mp, lastPulseWidth);
 
          output_pulse(mp, lastPulseWidth, lastPulseWidth, time_us_32());
          break;
@@ -157,7 +156,7 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
 
          const uint16_t val = (buffer[0] << 8 | buffer[1]);
 
-         LOG_FINE_MSG("MSG_CMD_CH_LL_POWER: MP:%u, VAL:%u\n", mp, val);
+         LOG_FINE_MSG("MSG_CMD_CH_LL_POWER: MP:%u, PWR:%u\n", mp, val);
          output_set_power(mp, val);
          break;
       }

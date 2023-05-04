@@ -63,6 +63,4 @@ void channel_pulse(channel_t* ch, uint16_t pos_us, uint16_t neg_us);
 
 void channel_set_power(channel_t* ch, uint16_t power);
 
-void channel_set_gen_enabled(channel_t* ch, bool enabled, uint16_t turn_off_delay_ms);
-
 #endif // _CHANNEL_H

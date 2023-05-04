@@ -10,9 +10,6 @@
 #define CH_CAL_ENABLED (0xff) // Channel mask: channels to calibrate when calibrating all channels
 #endif
 
-queue_t pulse_queue;
-queue_t power_queue;
-
 channel_t channels[CHANNEL_COUNT] = {
     CH(PIN_CH1_GA, PIN_CH1_GB, CH1_DAC_CHANNEL, CH1_ADC_CHANNEL, pio0, 0, CH1_CAL_THRESHOLD_OK, CH1_CAL_THRESHOLD_OVER, CH1_CAL_OFFSET),
 #if CHANNEL_COUNT > 1
@@ -25,6 +22,9 @@ channel_t channels[CHANNEL_COUNT] = {
 #endif
 #endif
 };
+
+static queue_t pulse_queue;
+static queue_t power_queue;
 
 static pulse_t pulse;           // current pulse
 static bool fetch_pulse = true; // if true, fetch next pulse from pulse_queue
@@ -103,7 +103,7 @@ void output_process_pulses() {
 
 void output_process_power() {
    pwr_cmd_t cmd;
-   if (queue_try_remove(&power_queue, &cmd))
+   if (queue_try_remove(&power_queue, &cmd) && cmd.channel < CHANNEL_COUNT)
       channel_set_power(&channels[cmd.channel], cmd.power);
 }
 
@@ -120,6 +120,24 @@ bool output_pulse(uint8_t channel, uint16_t pos_us, uint16_t neg_us, uint32_t ab
 void output_set_power(uint8_t channel, uint16_t power) {
    pwr_cmd_t cmd = {.channel = channel, .power = power};
    queue_try_add(&power_queue, &cmd);
+}
+
+static int64_t disable_gen_alarm_cb(alarm_id_t id, void* user_data) {
+   (void)id;
+   if (user_data)
+      *((bool*)user_data) = false;
+   return 0;
+}
+
+void output_set_gen_enabled(uint8_t channel, bool enabled, uint16_t turn_off_delay_ms) {
+   if (channel >= CHANNEL_COUNT || channels[channel].gen_enabled == enabled)
+      return;
+
+   if (!enabled && turn_off_delay_ms > 0) { // attempting to disable
+      add_alarm_in_ms(turn_off_delay_ms, disable_gen_alarm_cb, &channels[channel].gen_enabled, true);
+   } else {
+      channels[channel].gen_enabled = enabled;
+   }
 }
 
 void set_psu_enabled(bool enabled) {
