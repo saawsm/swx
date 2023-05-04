@@ -85,10 +85,11 @@ int main() {
 
    LOG_INFO("Starting core0 loop...\n");
 
-   // Device ready. Generate fake received MSG_CMD_STATUS message, so we can reply instead
-   // of constructing the byte buffer manually.
-   // Note: If SPI master is unconnected, ensure SPI_PORT is undefined or swx will hang
-   parse_message(MSG_CH_SPI | MSG_CH_UART | MSG_CH_STDIO, MSG_CMD_STATUS << MSG_CMD);
+   // Device ready. Generate fake received MSG_CMD_STATUS message, so we can reply
+   // instead of constructing the byte buffer manually.
+   // Note: Exclude SPI since SPI slaves cant start a transfer, instead assert interrupt pin.
+   parse_message(MSG_CH_UART | MSG_CH_STDIO, MSG_CMD_STATUS << MSG_CMD);
+   gpio_assert(PIN_INT);
 
    while (true) {
       protocol_process(MSG_CH_SPI | MSG_CH_UART | MSG_CH_STDIO);
