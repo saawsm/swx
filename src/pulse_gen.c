@@ -25,6 +25,9 @@ void pulse_gen_process() {
       for (uint8_t i = 0; i < TOTAL_PARAMS; i++)
          parameter_update(&ch->parameters[i]);
 
+      if (!ch->gen_enabled && ch->state_index == 0) // when disabled, wait until off state
+         continue;
+
       uint32_t time = time_us_32();
       if (time > ch->next_state_time_us) {
          if (++ch->state_index >= STATE_COUNT)
@@ -67,7 +70,7 @@ void pulse_gen_process() {
 
       uint16_t power = get_parameter(ch, PARAM_POWER, TARGET_VALUE);
       if (power == 0)
-         break;
+         continue;
 
       // Set channel output power
       output_set_power(channel, (uint16_t)(power_modifier * power));
@@ -79,7 +82,7 @@ void pulse_gen_process() {
          uint16_t pulse_width = get_parameter(ch, PARAM_PULSE_WIDTH, TARGET_VALUE);
 
          if (frequency == 0 || pulse_width == 0)
-            break;
+            continue;
 
          ch->next_pulse_time_us = time + (10000000 / frequency); // dHz -> us
 
