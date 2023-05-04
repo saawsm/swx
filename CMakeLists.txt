@@ -30,7 +30,10 @@ target_sources(${PROJECT_NAME}
         "src/util/i2c.c"
 )
 
+# DAC Implementation
 target_sources(${PROJECT_NAME} PRIVATE "src/hardware/mcp4728.c")
+
+# ADC Implementation
 target_sources(${PROJECT_NAME} PRIVATE "src/hardware/ads1015.c")
 
 # Generate PIO headers (place them in the build/generated folder)

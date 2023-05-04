@@ -20,9 +20,13 @@ bool blink_led_timer_cb(repeating_timer_t* rt);
 repeating_timer_t failure_timer;
 
 static void init() {
-#ifdef PIN_LED
-   init_gpio(PIN_LED, GPIO_OUT, 1); // turn on led during init
+#ifdef PIN_REG_EN
+   init_gpio(PIN_REG_EN, GPIO_OUT, 0); // ensure PSU is disabled while waiting for stdio_init
 #endif
+#ifdef PIN_LED
+   init_gpio(PIN_LED, GPIO_OUT, 1);                     // turn on led during init
+#endif
+   init_gpio(PIN_INT, GPIO_OUT, 1);                     // active low
 
    bool clk_success = set_sys_clock_khz(250000, false); // try set clock to 250MHz
    stdio_init_all();                                    // needs to be called after setting clock
@@ -33,6 +37,13 @@ static void init() {
 
    LOG_DEBUG("Init internal ADC...\n");
    adc_init();
+
+   // Init external DAC and ADC
+   extern void init_dac();
+   init_dac();
+
+   extern void init_adc();
+   init_adc();
 
    // Setup I2C as master for comms with DAC (and optionally an ADC)
 #ifdef I2C_PORT

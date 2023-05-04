@@ -6,6 +6,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     PIN_REG_EN=14
     
     PIN_LDAC=4
+    PIN_INT=5
 
     PIN_I2C_SDA=2
     PIN_I2C_SCL=3
@@ -14,7 +15,6 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     PIN_SPI_MOSI=16
     PIN_SPI_MISO=19
     PIN_SPI_CS=17
-    PIN_SPI_INT=5
     
     PIN_AUDIO_LEFT=27
     PIN_AUDIO_RIGHT=28

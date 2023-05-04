@@ -112,6 +112,8 @@ static uint16_t read_register(uint8_t reg) {
    return (buffer[0] << 8) | buffer[1];
 }
 
+void init_adc() {}
+
 bool adc_read_counts(uint8_t channel, uint16_t* counts) {
    uint16_t config = ADS1015_REG_CONFIG_CQUE_NONE |    // Set CQUE to disabled
                      ADS1015_REG_CONFIG_CLAT_NONLAT |  // Non-latching (default val)

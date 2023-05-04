@@ -1,5 +1,6 @@
 #include "../swx.h"
 #include "../util/i2c.h"
+#include "../util/gpio.h"
 
 #define MCP4728_MAX_VALUE (4095)
 #define MCP4728_CHANNEL_COUNT (4)
@@ -15,6 +16,12 @@ typedef enum { MCP4728_PD_NORMAL = 0, MCP4728_PD_GND_1K, MCP4728_PD_GND_100K, MC
 #define MCP4728_VREF (MCP4728_VREF_VDD)
 #define MCP4728_PD (MCP4728_PD_NORMAL)
 #define MCP4728_UDAC (false)
+
+void init_dac() {
+#ifdef PIN_LDAC
+   init_gpio(PIN_LDAC, GPIO_OUT, 0); // active low
+#endif
+}
 
 // Based on https://github.com/adafruit/Adafruit_MCP4728/blob/6d389cd87a8bd1e898136b4425c55ca7b83eccee/Adafruit_MCP4728.cpp
 bool set_dac_direct(uint8_t channel, uint16_t value) {
