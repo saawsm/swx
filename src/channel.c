@@ -39,6 +39,10 @@ static float read_voltage(channel_t* ch);
 static int pio_offsets[NUM_PIOS] = {-1};        // Lookup Table: PIO index -> PIO program offset
 static uint8_t pio_sm_counters[NUM_PIOS] = {0}; // Lookup Table: PIO index -> Number of initialized PIO state machines
 
+static inline void set_param(channel_t* ch, param_t param, target_t target, uint16_t value) {
+   parameter_set(&ch->parameters[param], target, value);
+}
+
 void channel_init(channel_t* ch) {
    LOG_DEBUG("Init channel: pio=%u sm=%d\n", pio_get_index(ch->pio), ch->sm);
 
@@ -64,9 +68,23 @@ void channel_init(channel_t* ch) {
    pio_sm_counters[pio_index]++; // Increment counter so we know PIO program is in use
 
    ch->status = CHANNEL_UNCALIBRATED;
-   ch->gen_enabled = true;
+   ch->gen_enabled = false;
    ch->power_level = 0;
    ch->state_index = 0;
+
+   // Set default parameter values
+   set_param(ch, PARAM_POWER, TARGET_VALUE, 1000);      // 100%
+
+   set_param(ch, PARAM_FREQUENCY, TARGET_MAX, 5000);    // max. 500 Hz (soft limit - only auto cycling)
+   set_param(ch, PARAM_FREQUENCY, TARGET_VALUE, 1800);  // 180 Hz
+
+   set_param(ch, PARAM_PULSE_WIDTH, TARGET_MAX, 500);   // max. 500 us
+   set_param(ch, PARAM_PULSE_WIDTH, TARGET_VALUE, 150); // 150 us
+
+   set_param(ch, PARAM_ON_TIME, TARGET_MAX, 10000);
+   set_param(ch, PARAM_ON_RAMP_TIME, TARGET_MAX, 10000);
+   set_param(ch, PARAM_OFF_TIME, TARGET_MAX, 10000);
+   set_param(ch, PARAM_OFF_RAMP_TIME, TARGET_MAX, 10000);
 }
 
 void channel_free(channel_t* ch) {
