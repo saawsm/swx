@@ -38,6 +38,11 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
    const uint8_t mp = (ctrl & MSG_MP_MASK) >> MSG_MP;
    const uint8_t cmd = (ctrl & MSG_CMD_MASK) >> MSG_CMD;
 
+   if (cmd >= MSG_CMD_CH_STATUS && mp >= CHANNEL_COUNT) {
+      LOG_FINE_MSG("MSG has invalid channel number: %u\n", mp);
+      return;
+   }
+
    switch (cmd) {
       case MSG_CMD_STATUS: { // SWX Status - RO
          LOG_FINE_MSG("MSG_CMD_STATUS: VER: %u, CHC: %u\n", SWX_VERSION, CHANNEL_COUNT);
@@ -63,20 +68,20 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
 
       case MSG_CMD_CH_STATUS: { // Channel Status - RO
          LOG_FINE_MSG("MSG_CMD_CH_STATUS...\n");
-         if (mp < CHANNEL_COUNT) {
-            const uint8_t status = channels[mp].status;
 
-            LOG_FINE_MSG("MSG_CMD_CH_STATUS: MP:%u, VAL:%u\n", mp, status);
-            REPLY_MSG(mp, status);
-         }
+         const uint8_t status = channels[mp].status;
+
+         REPLY_MSG(mp, status);
+
+         LOG_FINE_MSG("MSG_CMD_CH_STATUS: MP:%u, VAL:%u\n", mp, status);
          break;
       }
 
       case MSG_CMD_CH_EN: { // Channel Enabled State (R/W)
          LOG_FINE_MSG("MSG_CMD_CH_EN...\n");
 
-         bool enabled;
-         uint16_t tod_ms;
+         bool enabled = false;
+         uint16_t tod_ms = 0;
 
          if (write) {
             uint8_t buffer[1];
@@ -87,9 +92,6 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
 
             output_set_gen_enabled(mp, enabled, tod_ms);
          } else {
-            if (mp >= CHANNEL_COUNT)
-               break;
-
             enabled = channels[mp].gen_enabled;
 
             REPLY_MSG(mp, enabled);
@@ -102,22 +104,16 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
       case MSG_CMD_CH_POWER: { // Channel Power Level Percent (R/W)
          LOG_FINE_MSG("MSG_CMD_CH_POWER...\n");
 
-         uint16_t val;
+         uint16_t val = 0;
 
          if (write) {
             uint8_t buffer[2];
             read_blocking(origin, buffer, sizeof(buffer));
 
-            if (mp >= CHANNEL_COUNT)
-               break;
-
             val = (buffer[0] << 8 | buffer[1]);
 
             channels[mp].power_level = val;
          } else {
-            if (mp >= CHANNEL_COUNT)
-               break;
-
             val = channels[mp].power_level;
             REPLY_MSG(mp, HL16(val));
          }
@@ -142,9 +138,9 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
 
             val = (buffer[1] << 8 | buffer[2]);
 
-            if (mp < CHANNEL_COUNT && param < TOTAL_PARAMS && target < TOTAL_TARGETS) 
+            if (param < TOTAL_PARAMS && target < TOTAL_TARGETS)
                parameter_set(&channels[mp].parameters[param], target, val);
-            
+
          } else {
             uint8_t buffer[1];
             read_blocking(origin, buffer, sizeof(buffer));
@@ -152,7 +148,7 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
             param = buffer[0] >> 4;
             target = buffer[0] & 0xf;
 
-            if (mp < CHANNEL_COUNT && param < TOTAL_PARAMS && target < TOTAL_TARGETS) {
+            if (param < TOTAL_PARAMS && target < TOTAL_TARGETS) {
                val = channels[mp].parameters[param].values[target];
                REPLY_MSG(mp, HL16(val));
             }
@@ -191,6 +187,7 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
          const uint16_t val = (buffer[0] << 8 | buffer[1]);
 
          LOG_FINE_MSG("MSG_CMD_CH_LL_POWER: MP:%u, PWR:%u\n", mp, val);
+
          output_set_power(mp, val);
          break;
       }

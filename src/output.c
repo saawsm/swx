@@ -91,7 +91,7 @@ bool output_calibrate_all() {
 
 void output_process_pulses() {
    if (fetch_pulse) {
-      if (queue_try_remove(&pulse_queue, &pulse) && pulse.channel < CHANNEL_COUNT) {
+      if (queue_try_remove(&pulse_queue, &pulse)) {
          if (pulse.abs_time_us < time_us_32() + 1000000ul) // ignore pulses with wait times above 1 second
             fetch_pulse = false;
       }
@@ -103,7 +103,7 @@ void output_process_pulses() {
 
 void output_process_power() {
    pwr_cmd_t cmd;
-   if (queue_try_remove(&power_queue, &cmd) && cmd.channel < CHANNEL_COUNT)
+   if (queue_try_remove(&power_queue, &cmd))
       channel_set_power(&channels[cmd.channel], cmd.power);
 }
 
@@ -130,7 +130,7 @@ static int64_t disable_gen_alarm_cb(alarm_id_t id, void* user_data) {
 }
 
 void output_set_gen_enabled(uint8_t channel, bool enabled, uint16_t turn_off_delay_ms) {
-   if (channel >= CHANNEL_COUNT || channels[channel].gen_enabled == enabled)
+   if (channels[channel].gen_enabled == enabled)
       return;
 
    if (!enabled && turn_off_delay_ms > 0) { // attempting to disable

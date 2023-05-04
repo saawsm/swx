@@ -47,20 +47,20 @@ Note:
 #define MSG_CMD (2)
 #define MSG_CMD_MASK (15 << MSG_CMD)
 
-#define MSG_CMD_STATUS (0) // SWX Status - Version and channel count (RO)
-#define MSG_CMD_PSU (1)    // Power Supply State (R/W)
+#define MSG_CMD_STATUS (0)  // SWX Status - Version and channel count (RO)
+#define MSG_CMD_PSU (1)     // Power Supply State (R/W)
+
+#define MSG_CMD_AI_READ (2) // Read Audio Input (RO)
 
 // All MSG_CMD_CH_ commands use MSG_MP as the channel index
-#define MSG_CMD_CH_STATUS (2)   // Channel Status - See channel_status_t (RO)
-#define MSG_CMD_CH_EN (3)       // Channel Enabled State (R/W) - Supports switch off delay
-#define MSG_CMD_CH_POWER (4)    // Channel Power Level Percent (R/W)
-#define MSG_CMD_CH_PARAM (5)    // Dynamic Channel Parameter (R/W)
-#define MSG_CMD_CH_AI_SRC (6)   // Channel Audio Source (R/W)
+#define MSG_CMD_CH_STATUS (8)   // Channel Status - See channel_status_t (RO)
+#define MSG_CMD_CH_EN (9)       // Channel Enabled State (R/W) - Supports switch off delay
+#define MSG_CMD_CH_POWER (10)    // Channel Power Level Percent (R/W)
+#define MSG_CMD_CH_PARAM (11)    // Dynamic Channel Parameter (R/W)
+#define MSG_CMD_CH_AI_SRC (12)   // Channel Audio Source (R/W)
 
-#define MSG_CMD_CH_LL_PULSE (7) // Immediately pulse channel, bypassing pulse generation (R/W)
-#define MSG_CMD_CH_LL_POWER (8) // Immediately set channel power, bypassing pulse generation (WO)
-
-#define MSG_CMD_AI_READ (9)     // Read Audio Input (RO)
+#define MSG_CMD_CH_LL_PULSE (13) // Immediately pulse channel, bypassing pulse generation (R/W)
+#define MSG_CMD_CH_LL_POWER (14) // Immediately set channel power, bypassing pulse generation (WO)
 
 // ----------------------------------------------------------------------------------------------------
 
