@@ -39,6 +39,7 @@ void output_init() {
    set_psu_enabled(false);
 
    queue_init(&pulse_queue, sizeof(pulse_t), 10);
+   queue_init(&power_queue, sizeof(pwr_cmd_t), 10);
 
    // Print I2C devices found on bus
    i2c_scan(I2C_PORT); // TODO: Validate missing I2C devices
@@ -95,7 +96,7 @@ void output_process_pulses() {
          if (pulse.abs_time_us < time_us_32() + 1000000ul) // ignore pulses with wait times above 1 second
             fetch_pulse = false;
       }
-   } else if (pulse.abs_time_us > time_us_32()) {
+   } else if (pulse.abs_time_us < time_us_32()) {
       channel_pulse(&channels[pulse.channel], pulse.pos_us, pulse.neg_us);
       fetch_pulse = true;
    }
