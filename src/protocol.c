@@ -31,6 +31,8 @@ void protocol_process(msg_ch_t src) {
 }
 
 void parse_message(msg_ch_t origin, uint8_t ctrl) {
+   extern channel_t channels[CHANNEL_COUNT];
+
    // const bool has_id = (ctrl & MSG_ID_MASK);
    const bool write = (ctrl & MSG_MODE_MASK);
    const uint8_t mp = (ctrl & MSG_MP_MASK) >> MSG_MP;

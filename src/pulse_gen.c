@@ -18,6 +18,8 @@ static inline uint16_t get_parameter(channel_t* ch, param_t param, target_t targ
 }
 
 void pulse_gen_process() {
+   extern channel_t channels[CHANNEL_COUNT];
+
    for (uint8_t channel = 0; channel < CHANNEL_COUNT; channel++) {
       channel_t* ch = &channels[channel];
 
@@ -45,13 +47,13 @@ void pulse_gen_process() {
       switch (channel_state) {
          case PARAM_ON_RAMP_TIME:    // Ramp power from zero to power value
          case PARAM_OFF_RAMP_TIME: { // Ramp power from power value to zero
-            uint16_t rampTime = get_parameter(ch, channel_state, TARGET_VALUE) * 1000;
-            if (rampTime == 0)
+            uint16_t ramp_time = get_parameter(ch, channel_state, TARGET_VALUE) * 1000;
+            if (ramp_time == 0)
                break;
 
             uint32_t time_remaining = ch->next_state_time_us - time;
 
-            power_modifier = (float)time_remaining / rampTime;
+            power_modifier = (float)time_remaining / ramp_time;
             if (power_modifier > 1)
                power_modifier = 1;
 

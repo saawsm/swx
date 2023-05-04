@@ -21,8 +21,6 @@ typedef struct {
    uint16_t neg_us;
 } pulse_t;
 
-extern channel_t channels[CHANNEL_COUNT];
-
 void output_init();
 void output_free();
 
