@@ -127,6 +127,38 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
       }
 
       case MSG_CMD_CH_PARAM: { // Dynamic Channel Parameter (R/W)
+         LOG_FINE_MSG("MSG_CMD_CH_PARAM...\n");
+
+         uint8_t param;
+         uint8_t target;
+         uint16_t val = 0;
+
+         if (write) {
+            uint8_t buffer[3];
+            read_blocking(origin, buffer, sizeof(buffer));
+
+            param = buffer[0] >> 4;
+            target = buffer[0] & 0xf;
+
+            val = (buffer[1] << 8 | buffer[2]);
+
+            if (mp < CHANNEL_COUNT && param < TOTAL_PARAMS && target < TOTAL_TARGETS) 
+               parameter_set(&channels[mp].parameters[param], target, val);
+            
+         } else {
+            uint8_t buffer[1];
+            read_blocking(origin, buffer, sizeof(buffer));
+
+            param = buffer[0] >> 4;
+            target = buffer[0] & 0xf;
+
+            if (mp < CHANNEL_COUNT && param < TOTAL_PARAMS && target < TOTAL_TARGETS) {
+               val = channels[mp].parameters[param].values[target];
+               REPLY_MSG(mp, HL16(val));
+            }
+         }
+
+         LOG_FINE_MSG("MSG_CMD_CH_PARAM: W:%u MP:%u, P:%u, T:%u VAL:%u\n", write, mp, param, target, val);
          break;
       }
 
