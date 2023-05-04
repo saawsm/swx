@@ -66,6 +66,7 @@ void channel_init(channel_t* ch) {
    ch->status = CHANNEL_UNCALIBRATED;
    ch->gen_enabled = true;
    ch->power_level = 0;
+   ch->state_index = 0;
 }
 
 void channel_free(channel_t* ch) {
@@ -96,7 +97,6 @@ void channel_free(channel_t* ch) {
 
    ch->status = CHANNEL_INVALID;
    ch->gen_enabled = false;
-   ch->power_level = 0;
 }
 
 channel_status_t channel_calibrate(channel_t* ch) {
