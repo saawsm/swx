@@ -16,9 +16,9 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     PIN_SPI_MISO=19
     PIN_SPI_CS=17
     
+    PIN_AUDIO_MIC=26
     PIN_AUDIO_LEFT=27
     PIN_AUDIO_RIGHT=28
-    PIN_AUDIO_MIC=29
 
     PIN_I2S_BCLK=20
     PIN_I2S_WS=21
