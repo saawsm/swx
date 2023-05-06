@@ -43,6 +43,7 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
       return;
    }
 
+   // TODO: Fix protocol command logging incorrect values when out-of-range/invalid
    switch (cmd) {
       case MSG_CMD_STATUS: { // SWX Status - RO
          LOG_FINE_MSG("MSG_CMD_STATUS: VER: %u, CHC: %u\n", SWX_VERSION, CHANNEL_COUNT);
@@ -159,6 +160,22 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
       }
 
       case MSG_CMD_CH_AI_SRC: { // Channel Audio Source (R/W)
+         LOG_FINE_MSG("MSG_CMD_CH_AI_SRC...\n");
+
+         uint8_t val = 0;
+         if (write) {
+            uint8_t buffer[1];
+            read_blocking(origin, buffer, sizeof(buffer));
+
+            val = buffer[0];
+            if (val <= TOTAL_AUDIO_CHANNELS)
+               channels[mp].audio_src = val;
+         } else {
+            val = channels[mp].audio_src;
+            REPLY_MSG(mp, val);
+         }
+
+         LOG_FINE_MSG("MSG_CMD_CH_AI_SRC: W:%u MP:%u VAL:%u\n", write, mp, val);
          break;
       }
 

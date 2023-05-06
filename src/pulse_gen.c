@@ -74,22 +74,34 @@ void pulse_gen_process() {
       if (power == 0)
          continue;
 
-      // Set channel output power
-      output_set_power(channel, (uint16_t)(power_modifier * power));
+      power = (uint16_t)(power_modifier * (float)power);
 
-      // Generate the pulses
-      time = time_us_32();
-      if (time > ch->next_pulse_time_us) {
-         uint16_t frequency = get_parameter(ch, PARAM_FREQUENCY, TARGET_VALUE);
-         uint16_t pulse_width = get_parameter(ch, PARAM_PULSE_WIDTH, TARGET_VALUE);
+      // Channel has audio source, so process audio instead of processing function gen
+      if (ch->audio_src != 0) {
+         // TODO: Process output channel audio source
+      } else { // otherwise use pulse gen
 
-         if (frequency == 0 || pulse_width == 0)
-            continue;
+         // Set channel output power, limit updates to ~2.2 kHz since it takes the DAC about ~110us/ch
+         time = time_us_32();
+         if (time - ch->last_power_time_us > 110 * CHANNEL_COUNT) {
+            ch->last_power_time_us = time;
+            output_set_power(channel, power);
+         }
 
-         ch->next_pulse_time_us = time + (10000000 / frequency); // dHz -> us
+         // Generate the pulses
+         time = time_us_32();
+         if (time > ch->next_pulse_time_us) {
+            uint16_t frequency = get_parameter(ch, PARAM_FREQUENCY, TARGET_VALUE);
+            uint16_t pulse_width = get_parameter(ch, PARAM_PULSE_WIDTH, TARGET_VALUE);
 
-         // Pulse the channnel
-         output_pulse(channel, pulse_width, pulse_width, time_us_32());
+            if (frequency == 0 || pulse_width == 0)
+               continue;
+
+            ch->next_pulse_time_us = time + (10000000 / frequency); // dHz -> us
+
+            // Pulse the channnel
+            output_pulse(channel, pulse_width, pulse_width, time_us_32());
+         }
       }
    }
 }

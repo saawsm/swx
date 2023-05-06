@@ -3,6 +3,8 @@
 
 #include "swx.h"
 
+#define TOTAL_AUDIO_CHANNELS (3)
+
 typedef enum {
    AUDIO_CHANNEL_NONE = 0,
    AUDIO_CHANNEL_MIC,

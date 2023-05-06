@@ -3,6 +3,7 @@
 
 #include "swx.h"
 #include "parameter.h"
+#include "analog_capture.h"
 
 #include <hardware/pio.h>
 
@@ -41,15 +42,21 @@ typedef struct {
 
    channel_status_t status;
 
+   // Pulse Generation Variables
    bool gen_enabled;                     // If true, pulse and power from pulse generator will be output to channel
 
    uint16_t power_level;                 // The power level of the channel in percent (scales the power level dynamic parameter)
 
-   parameter_t parameters[TOTAL_PARAMS]; // Dynamic parameters // TODO: Setup default parameter values
+   audio_channel_t audio_src;            // The analog input channel, when set overrides pulse function generator
 
-   uint32_t next_pulse_time_us;
-   uint32_t next_state_time_us;
-   uint8_t state_index;
+   parameter_t parameters[TOTAL_PARAMS]; // Dynamic parameters
+
+   uint32_t last_power_time_us;          // The absolute timestamp since the last power update occurred
+   uint32_t last_pulse_time_us;          // The absolute timestamp since the last pulse occurred
+
+   uint32_t next_pulse_time_us;          // The absolute timestamp for the scheduled next pulse
+   uint32_t next_state_time_us;          // The absolute timestamp for the scheduled next "waveform" state change (e.g. off -> on_ramp -> on)
+   uint8_t state_index;                  // The current "waveform" state (e.g. off, on_ramp, on)
 
 } channel_t;
 
