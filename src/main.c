@@ -9,6 +9,7 @@
 #include "output.h"
 #include "pulse_gen.h"
 #include "protocol.h"
+#include "analog_capture.h"
 
 #include "util/i2c.h"
 #include "util/gpio.h"
@@ -83,6 +84,9 @@ int main() {
    multicore_reset_core1();
    multicore_launch_core1(core1_entry);
 
+   LOG_INFO("Init analog capture...\n");
+   analog_capture_init();
+
    LOG_INFO("Starting core0 loop...\n");
 
    // Device ready. Generate fake received MSG_CMD_STATUS message, so we can reply
@@ -91,14 +95,19 @@ int main() {
    parse_message(MSG_CH_UART | MSG_CH_STDIO, MSG_CMD_STATUS << MSG_CMD);
    gpio_assert(PIN_INT);
 
+   LOG_INFO("Starting analog capture...\n");
+   analog_capture_start();
+
    while (true) {
       protocol_process(MSG_CH_SPI | MSG_CH_UART | MSG_CH_STDIO);
+
       pulse_gen_process();
       output_process_pulses();
    }
 
    // Code execution shouldn't get this far...
    output_free(); // release resources and put GPIO into a safe and known state
+   analog_capture_free();
 }
 
 void core1_entry() {
