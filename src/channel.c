@@ -200,7 +200,9 @@ channel_status_t channel_calibrate(channel_t* ch) {
 }
 
 void channel_pulse(channel_t* ch, uint16_t pos_us, uint16_t neg_us) {
-   if (ch->status != CHANNEL_READY)
+   static const uint16_t PW_MAX = (1 << PULSE_GEN_BITS) - 1;
+
+   if (ch->status != CHANNEL_READY || pos_us > PW_MAX || pos_us > PW_MAX)
       return;
 
    if (!pio_sm_is_tx_fifo_full(ch->pio, ch->sm)) {
