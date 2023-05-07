@@ -35,7 +35,7 @@ bool set_dac_direct(uint8_t channel, uint16_t value) {
 #endif
 
    if (channel >= MCP4728_CHANNEL_COUNT) {
-      LOG_ERROR("MCP4728 - Out of range channel index! channel=%u\n", channel);
+      LOG_WARN("MCP4728: ch=%u - Out of range channel index!\n", channel);
       return false;
    }
 
@@ -56,11 +56,11 @@ bool set_dac_direct(uint8_t channel, uint16_t value) {
    buffer[1] = value >> 8;
    buffer[2] = value & 0xFF;
 
-   // LOG_FINE("Set DAC: channel=%d value=%d\n", channel, value);
+   LOG_FINE("set_dac_direct: ch=%u value=%u\n", channel, value);
 
    int ret = i2c_write(I2C_PORT, DAC_ADDRESS, buffer, sizeof(buffer), false, I2C_DEVICE_TIMEOUT);
    if (ret < 0) {
-      LOG_WARN("MCP4728 - I2C write failed! ret=%d\n", ret);
+      LOG_ERROR("MCP4728: ret=%d - I2C write failed!\n", ret);
       return false;
    }
    return true;

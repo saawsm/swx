@@ -35,6 +35,8 @@ static volatile int adc_buf_ready;             // Used in irq: The adc buffer th
 static volatile uint32_t adc_buf_done_time_us; // Used in irq: The absolute time the capture finished in microseconds
 
 void analog_capture_init() {
+   LOG_DEBUG("Init analog capture...\n");
+
    adc_gpio_init(PIN_AUDIO_LEFT);
    adc_gpio_init(PIN_AUDIO_RIGHT);
    adc_gpio_init(PIN_AUDIO_MIC);
@@ -65,6 +67,8 @@ void analog_capture_init() {
 }
 
 void analog_capture_free() {
+   LOG_DEBUG("Free analog capture...\n");
+
    analog_capture_stop();
 
    // Errata RP2040-E13
@@ -90,10 +94,12 @@ void analog_capture_free() {
 }
 
 void analog_capture_start() {
+   LOG_INFO("Starting analog capture...\n");
    adc_run(true);
 }
 
 void analog_capture_stop() {
+   LOG_INFO("Stopping analog capture...\n");
    adc_run(false);
 }
 

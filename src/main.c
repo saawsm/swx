@@ -32,7 +32,7 @@ static void init() {
    bool clk_success = set_sys_clock_khz(250000, false); // try set clock to 250MHz
    stdio_init_all();                                    // needs to be called after setting clock
 
-   LOG_INFO("~~ swx driver %u ~~\n", SWX_VERSION);
+   LOG_INFO("~~ swx driver %u ~~\nStarting up...\n", SWX_VERSION);
    if (clk_success)
       LOG_DEBUG("sys_clk set to 250MHz\n");
 
@@ -80,14 +80,13 @@ int main() {
    if (!output_calibrate_all()) // blink led at 4 Hz, if calibration failed
       add_repeating_timer_us(HZ_TO_US(4), blink_led_timer_cb, NULL, &failure_timer);
 
-   LOG_INFO("Starting core1...\n");
+   LOG_DEBUG("Starting core1...\n");
    multicore_reset_core1();
    multicore_launch_core1(core1_entry);
 
-   LOG_INFO("Init analog capture...\n");
    analog_capture_init();
 
-   LOG_INFO("Starting core0 loop...\n");
+   LOG_DEBUG("Starting core0 loop...\n");
 
    // Device ready. Generate fake received MSG_CMD_STATUS message, so we can reply
    // instead of constructing the byte buffer manually.
@@ -95,9 +94,9 @@ int main() {
    parse_message(MSG_CH_UART | MSG_CH_STDIO, MSG_CMD_STATUS << MSG_CMD);
    gpio_assert(PIN_INT);
 
-   LOG_INFO("Starting analog capture...\n");
    analog_capture_start();
 
+   LOG_INFO("Ready.\n");
    while (true) {
       protocol_process(MSG_CH_SPI | MSG_CH_UART | MSG_CH_STDIO);
 
@@ -106,12 +105,13 @@ int main() {
    }
 
    // Code execution shouldn't get this far...
+   LOG_WARN("End reached! Releasing resources...\n");
    output_free(); // release resources and put GPIO into a safe and known state
    analog_capture_free();
 }
 
 void core1_entry() {
-   LOG_INFO("Starting core1 loop...\n");
+   LOG_DEBUG("Starting core1 loop...\n");
 
    while (true) {
       output_process_power(); // process channel set power on core1, since DAC takes ~110us/ch to set

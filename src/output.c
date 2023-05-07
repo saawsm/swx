@@ -30,7 +30,7 @@ static pulse_t pulse;           // current pulse
 static bool fetch_pulse = true; // if true, fetch next pulse from pulse_queue
 
 void output_init() {
-   LOG_INFO("Init output...\n");
+   LOG_DEBUG("Init output...\n");
 
 // Assume PSU always on if pin is undefined.
 #ifdef PIN_REG_EN
@@ -51,7 +51,8 @@ void output_init() {
 }
 
 void output_free() {
-   LOG_DEBUG("Freeing output...\n");
+   LOG_DEBUG("Free output...\n");
+
    set_psu_enabled(false);
 
    queue_free(&pulse_queue);
@@ -149,10 +150,10 @@ void set_psu_enabled(bool enabled) {
 
    if (oldState != enabled) {
       if (enabled) {
-         LOG_DEBUG("Enabling power...\n");
+         LOG_INFO("Enabling power...\n");
          sleep_ms(100); // wait for reg to stabilize
       } else {
-         LOG_DEBUG("Disabling power...\n");
+         LOG_INFO("Disabling power...\n");
       }
    }
 #endif

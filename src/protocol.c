@@ -7,7 +7,7 @@
 
 #define REPLY_MSG(...)                                                                                                                                                   \
    do {                                                                                                                                                                  \
-      const uint8_t data[] = {MSG_ID_MASK | (ctrl), __VA_ARGS__};                                                                                                        \
+      const uint8_t data[] = {(1 << MSG_ID) | (ctrl), __VA_ARGS__};                                                                                                      \
       write_blocking(origin, &data, sizeof(data));                                                                                                                       \
    } while (0)
 
@@ -31,22 +31,22 @@ void protocol_process(msg_ch_t src) {
 }
 
 void parse_message(msg_ch_t origin, uint8_t ctrl) {
-   extern channel_t channels[CHANNEL_COUNT];
+   if (!(ctrl & MSG_ID_MASK)) // Discard any messages wihtout the ID bit set
+      return;
 
-   // const bool has_id = (ctrl & MSG_ID_MASK);
    const bool write = (ctrl & MSG_MODE_MASK);
    const uint8_t mp = (ctrl & MSG_MP_MASK) >> MSG_MP;
    const uint8_t cmd = (ctrl & MSG_CMD_MASK) >> MSG_CMD;
 
    if (cmd >= MSG_CMD_CH_STATUS && mp >= CHANNEL_COUNT) {
-      LOG_FINE_MSG("MSG has invalid channel number: %u\n", mp);
+      LOG_WARN("Message has invalid channel number: cmd=%u ch=%u - Ignoring...\n", cmd, mp);
       return;
    }
 
-   // TODO: Fix protocol command logging incorrect values when out-of-range/invalid
+   extern channel_t channels[CHANNEL_COUNT];
    switch (cmd) {
       case MSG_CMD_STATUS: { // SWX Status - RO
-         LOG_FINE_MSG("MSG_CMD_STATUS: VER: %u, CHC: %u\n", SWX_VERSION, CHANNEL_COUNT);
+         LOG_DEBUG("MSG_CMD_STATUS: version=%u channels=%u\n", SWX_VERSION, CHANNEL_COUNT);
 
          REPLY_MSG(SWX_VERSION >> 8, SWX_VERSION & 0xff, CHANNEL_COUNT);
          break;
@@ -54,33 +54,28 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
 
       case MSG_CMD_PSU: { // Power Supply State - R/W
          bool enabled;
-
          if (write) {
             enabled = mp > 0;
             set_psu_enabled(enabled);
-         } else {
+         } else { // read
             enabled = is_psu_enabled();
             REPLY_MSG(enabled);
          }
 
-         LOG_FINE_MSG("MSG_CMD_PSU: W:%u, VAL:%u\n", write, enabled);
+         LOG_DEBUG("MSG_CMD_PSU: write=%u value=%u\n", write, enabled);
          break;
       }
 
       case MSG_CMD_CH_STATUS: { // Channel Status - RO
-         LOG_FINE_MSG("MSG_CMD_CH_STATUS...\n");
-
          const uint8_t status = channels[mp].status;
 
          REPLY_MSG(mp, status);
 
-         LOG_FINE_MSG("MSG_CMD_CH_STATUS: MP:%u, VAL:%u\n", mp, status);
+         LOG_DEBUG("MSG_CMD_CH_STATUS: ch=%u value=%u\n", mp, status);
          break;
       }
 
       case MSG_CMD_CH_EN: { // Channel Enabled State (R/W)
-         LOG_FINE_MSG("MSG_CMD_CH_EN...\n");
-
          bool enabled = false;
          uint16_t tod_ms = 0;
 
@@ -92,19 +87,17 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
             tod_ms = 0; // TODO: Add support for turn_off_delay_ms for MSG_CMD_CH_EN
 
             output_set_gen_enabled(mp, enabled, tod_ms);
-         } else {
+         } else { // read
             enabled = channels[mp].gen_enabled;
 
             REPLY_MSG(mp, enabled);
          }
 
-         LOG_FINE_MSG("MSG_CMD_CH_EN: W:%u MP:%u, VAL:%u, TOD:%u\n", write, mp, enabled, tod_ms);
+         LOG_DEBUG("MSG_CMD_CH_EN: write=%u ch=%u value=%u tod=%u\n", write, mp, enabled, tod_ms);
          break;
       }
 
       case MSG_CMD_CH_POWER: { // Channel Power Level Percent (R/W)
-         LOG_FINE_MSG("MSG_CMD_CH_POWER...\n");
-
          uint16_t val = 0;
 
          if (write) {
@@ -112,76 +105,60 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
             read_blocking(origin, buffer, sizeof(buffer));
 
             val = (buffer[0] << 8 | buffer[1]);
-
             channels[mp].power_level = val;
-         } else {
+         } else { // read
             val = channels[mp].power_level;
             REPLY_MSG(mp, HL16(val));
          }
 
-         LOG_FINE_MSG("MSG_CMD_CH_POWER: W:%u MP:%u VAL:%u\n", write, mp, val);
+         LOG_DEBUG("MSG_CMD_CH_POWER: write=%u ch=%u value=%u\n", write, mp, val);
          break;
       }
 
       case MSG_CMD_CH_PARAM: { // Dynamic Channel Parameter (R/W)
-         LOG_FINE_MSG("MSG_CMD_CH_PARAM...\n");
+         uint8_t buffer[3];
+         read_blocking(origin, buffer, write ? sizeof(buffer) : 1);
 
-         uint8_t param;
-         uint8_t target;
-         uint16_t val = 0;
+         const uint8_t param = buffer[0] >> 4;
+         const uint8_t target = buffer[0] & 0xf;
 
-         if (write) {
-            uint8_t buffer[3];
-            read_blocking(origin, buffer, sizeof(buffer));
+         if (param < TOTAL_PARAMS && target < TOTAL_TARGETS) {
 
-            param = buffer[0] >> 4;
-            target = buffer[0] & 0xf;
+            uint16_t val = 0;
 
-            val = (buffer[1] << 8 | buffer[2]);
-
-            if (param < TOTAL_PARAMS && target < TOTAL_TARGETS)
+            if (write) {
+               val = (buffer[1] << 8 | buffer[2]);
                parameter_set(&channels[mp].parameters[param], target, val);
-
-         } else {
-            uint8_t buffer[1];
-            read_blocking(origin, buffer, sizeof(buffer));
-
-            param = buffer[0] >> 4;
-            target = buffer[0] & 0xf;
-
-            if (param < TOTAL_PARAMS && target < TOTAL_TARGETS) {
+            } else { // read
                val = channels[mp].parameters[param].values[target];
                REPLY_MSG(mp, HL16(val));
             }
-         }
 
-         LOG_FINE_MSG("MSG_CMD_CH_PARAM: W:%u MP:%u, P:%u, T:%u VAL:%u\n", write, mp, param, target, val);
+            LOG_DEBUG("MSG_CMD_CH_PARAM: write=%u ch=%u param=%u target=%u value=%u\n", write, mp, param, target, val);
+         } else {
+            LOG_WARN("MSG_CMD_CH_PARAM: write=%u param=%u target=%u - Parameter or target invalid! Ignoring...\n", write, param, target);
+         }
          break;
       }
 
       case MSG_CMD_CH_AI_SRC: { // Channel Audio Source (R/W)
-         LOG_FINE_MSG("MSG_CMD_CH_AI_SRC...\n");
-
          uint8_t val = 0;
          if (write) {
             uint8_t buffer[1];
             read_blocking(origin, buffer, sizeof(buffer));
 
             val = buffer[0];
-            if (val <= TOTAL_AUDIO_CHANNELS)
-               channels[mp].audio_src = val;
-         } else {
+            channels[mp].audio_src = val;
+         } else { // read
             val = channels[mp].audio_src;
             REPLY_MSG(mp, val);
          }
 
-         LOG_FINE_MSG("MSG_CMD_CH_AI_SRC: W:%u MP:%u VAL:%u\n", write, mp, val);
+         LOG_DEBUG("MSG_CMD_CH_AI_SRC: write=%u ch=%u value=%u\n", write, mp, val);
          break;
       }
 
       case MSG_CMD_CH_LL_PULSE: { // Channel Low Level Pulse - R/W
-         LOG_FINE_MSG("MSG_CMD_CH_LL_PULSE...\n");
-
          if (write) {
             uint8_t buffer[2];
             read_blocking(origin, buffer, sizeof(buffer));
@@ -189,23 +166,21 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
             lastPulseWidth = (buffer[0] << 8 | buffer[1]);
          }
 
-         LOG_FINE_MSG("MSG_CMD_CH_LL_PULSE: W:%u MP:%u, PW:%u\n", write, mp, lastPulseWidth);
-
          output_pulse(mp, lastPulseWidth, lastPulseWidth, time_us_32());
+
+         LOG_DEBUG("MSG_CMD_CH_LL_PULSE: write=%u ch=%u value=%u\n", write, mp, lastPulseWidth);
          break;
       }
 
       case MSG_CMD_CH_LL_POWER: { // Channel Low Level Set Power - WO
-         LOG_FINE_MSG("MSG_CMD_CH_LL_POWER...\n");
-
          uint8_t buffer[2];
          read_blocking(origin, buffer, sizeof(buffer));
 
          const uint16_t val = (buffer[0] << 8 | buffer[1]);
 
-         LOG_FINE_MSG("MSG_CMD_CH_LL_POWER: MP:%u, PWR:%u\n", mp, val);
-
          output_set_power(mp, val);
+
+         LOG_DEBUG("MSG_CMD_CH_LL_POWER: ch=%u value=%u\n", mp, val);
          break;
       }
 

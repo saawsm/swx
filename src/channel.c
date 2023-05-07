@@ -59,7 +59,7 @@ void channel_init(channel_t* ch) {
       if (!pio_can_add_program(ch->pio, &CHANNEL_PIO_PROGRAM))
          panic("PIO program cant be added! No program space!");
 
-      LOG_FINE("Loading pulse gen PIO program: pio=%d\n", pio_index);
+      LOG_DEBUG("Loading pulse gen PIO program: pio=%d\n", pio_index);
       pio_offsets[pio_index] = pio_add_program(ch->pio, &CHANNEL_PIO_PROGRAM);
    }
 
@@ -93,7 +93,7 @@ void channel_free(channel_t* ch) {
 
    // Disable and unclaim PIO state machine
    if (pio_sm_is_claimed(ch->pio, ch->sm)) {
-      LOG_FINE("Freeing PIO state machine...\n");
+      LOG_DEBUG("Freeing PIO state machine...\n");
       pio_sm_set_enabled(ch->pio, ch->sm, false);
       pio_sm_unclaim(ch->pio, ch->sm);
       pio_sm_counters[pio_index]--;
@@ -101,7 +101,7 @@ void channel_free(channel_t* ch) {
 
    // Remove PIO program if no more state machines are in use
    if (pio_offsets[pio_index] >= 0 && pio_sm_counters[pio_index] == 0) {
-      LOG_FINE("Removing pulse gen PIO program: pio=%d\n", pio_index);
+      LOG_DEBUG("Removing pulse gen PIO program: pio=%d\n", pio_index);
       pio_remove_program(ch->pio, &CHANNEL_PIO_PROGRAM, pio_offsets[pio_index]);
       pio_offsets[pio_index] = -1;
    }
@@ -121,7 +121,7 @@ channel_status_t channel_calibrate(channel_t* ch) {
    if (ch->status == CHANNEL_INVALID)
       return CHANNEL_INVALID;
 
-   LOG_INFO("Calibrating channel: pio=%u sm=%d\n", pio_get_index(ch->pio), ch->sm);
+   LOG_DEBUG("Calibrating channel: pio=%u sm=%d\n", pio_get_index(ch->pio), ch->sm);
 
    ch->status = CHANNEL_CALIBRATING;
 
