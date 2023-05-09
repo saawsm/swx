@@ -19,7 +19,7 @@ View the [SW32](https://github.com/saawsm/SW32) or [SW22](https://github.com/saa
 # Getting Started
 
 ```bat
-git clone -b master --recurse-submodules https://github.com/saawsm/swx
+git clone -b master https://github.com/saawsm/swx
 ```
 
 _Use `-b develop` instead for the develop branch of swx. The dev branch can be unstable, use with caution._
@@ -30,7 +30,7 @@ Ensure you can build C/C++ projects written using [pico-sdk](https://github.com/
 
 ### Building
 
-Board specific hardware configuration can be found in the `boards` folder.
+Board hardware configurations can be found in the `boards` folder.
 
 ```bat
 mkdir build
@@ -39,7 +39,6 @@ cmake -DPICO_BOARD=<board> ..
 make -j4
 ```
 
-Replace `<board>` with the board name found in the `boards` folder (e.g. `SW22`). 
-Additional options can be found by using `cmake -L ..` or by viewing the top of the `CMakeLists.txt` file.
+Replace `<board>` with the board name (e.g. `SW22`).
 
 Built firmware named `swx.uf2` or `swx.bin` will be located in the `build` folder.
