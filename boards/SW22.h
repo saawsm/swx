@@ -37,10 +37,10 @@
 #define I2C_FREQ (400000)
 
 // -------- I2C Devices --------
-#define USE_ADS1015_ADC // Use I2C ADC for feedback
+#define USE_ADC_ADS1015 // Use I2C ADC for feedback
 #define ADC_ADDRESS (0x48)
 
-#define USE_MCP4728_DAC // Use I2C DAC for level control
+#define USE_DAC_MCP4728 // Use I2C DAC for level control
 #define DAC_ADDRESS (0x60)
 
 // -------- Channels --------

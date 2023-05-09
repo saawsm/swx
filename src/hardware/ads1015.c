@@ -1,6 +1,6 @@
 #include "../swx.h"
 
-#ifdef USE_ADS1015_ADC
+#ifdef USE_ADC_ADS1015
 #include "../util/i2c.h"
 
 #define ADS1015_CHANNEL_COUNT (4)

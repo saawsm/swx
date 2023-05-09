@@ -1,6 +1,6 @@
 #include "../swx.h"
 
-#ifdef USE_MCP4728_DAC
+#ifdef USE_DAC_MCP4728
 #include "../util/i2c.h"
 #include "../util/gpio.h"
 
