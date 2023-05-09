@@ -47,7 +47,7 @@ typedef struct {
 
    uint16_t power_level;                 // The power level of the channel in percent (scales the power level dynamic parameter)
 
-   audio_channel_t audio_src;            // The analog input channel, when set overrides pulse function generator
+   analog_channel_t audio_src;           // The analog input channel, when set overrides pulse function generator
 
    parameter_t parameters[TOTAL_PARAMS]; // Dynamic parameters
 

@@ -1,6 +1,7 @@
 #include "swx.h"
 #include "parameter.h"
 #include "output.h"
+#include "audio.h"
 
 #define STATE_COUNT (4)
 
@@ -78,7 +79,7 @@ void pulse_gen_process() {
 
       // Channel has audio source, so process audio instead of processing function gen
       if (ch->audio_src != 0) {
-         // TODO: Process output channel audio source
+         audio_process(ch, channel, power);
       } else { // otherwise use pulse gen
 
          // Set channel output power, limit updates to ~2.2 kHz since it takes the DAC about ~110us/ch
@@ -97,7 +98,7 @@ void pulse_gen_process() {
             if (frequency == 0 || pulse_width == 0)
                continue;
 
-            ch->next_pulse_time_us = time + (10000000 / frequency); // dHz -> us
+            ch->next_pulse_time_us = time + (10000000ul / frequency); // dHz -> us
 
             // Pulse the channnel
             output_pulse(channel, pulse_width, pulse_width, time_us_32());

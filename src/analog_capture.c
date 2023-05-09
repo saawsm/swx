@@ -26,13 +26,23 @@ static uint dma_adc_channel2;
 static uint8_t capture_adc_buf1[ADC_CAPTURE_DEPTH] __attribute__((aligned(2048)));
 static uint8_t capture_adc_buf2[ADC_CAPTURE_DEPTH] __attribute__((aligned(2048)));
 
-// Consumer buffers, updated on request
-static uint8_t audio_buffer_l[ADC_CAPTURE_DEPTH / SAMPLED_ADC_CHANNELS] = {0};
-static uint8_t audio_buffer_r[ADC_CAPTURE_DEPTH / SAMPLED_ADC_CHANNELS] = {0};
-static uint8_t audio_buffer_m[ADC_CAPTURE_DEPTH / SAMPLED_ADC_CHANNELS] = {0};
+static const uint8_t* capture_buf_lookup[] = {capture_adc_buf1, capture_adc_buf2};
 
-static volatile int adc_buf_ready;             // Used in irq: The adc buffer that finished capture, now ready for reading/processing
+// Consumer buffers, updated on request
+static uint8_t adc_buffers[TOTAL_ANALOG_CHANNELS][ADC_CAPTURE_DEPTH / SAMPLED_ADC_CHANNELS] = {0};
+
+// Lookup Table: Analog channel -> ADC round robin stripe offset
+static const uint8_t adc_stripe_lookup[] = {
+    [AUDIO_CHANNEL_MIC] = (PIN_AUDIO_MIC - PIN_ADC_BASE),
+    [AUDIO_CHANNEL_LEFT] = (PIN_AUDIO_LEFT - PIN_ADC_BASE),
+    [AUDIO_CHANNEL_RIGHT] = (PIN_AUDIO_RIGHT - PIN_ADC_BASE),
+};
+
+static volatile uint16_t adc_buf_ready;        // Used in irq: The adc buffer that finished capture, now ready for reading/processing
 static volatile uint32_t adc_buf_done_time_us; // Used in irq: The absolute time the capture finished in microseconds
+static uint32_t adc_end_time_us;               // Cached version of: adc_buf_done_time_us
+
+static const uint32_t adc_capture_duration_us = ADC_CAPTURE_DEPTH * (1000000ul / ADC_SAMPLES_PER_SECOND);
 
 void analog_capture_init() {
    LOG_DEBUG("Init analog capture...\n");
@@ -107,50 +117,74 @@ static void __not_in_flash_func(irq)() {
    if (dma_channel_get_irq0_status(dma_adc_channel1)) {
       adc_select_input(0);
 
-      adc_buf_ready = 1;
+      adc_buf_ready = 0x3fff | (0 << 14); // lookup index: 0
       adc_buf_done_time_us = time_us_32();
 
       dma_channel_acknowledge_irq0(dma_adc_channel1);
    } else if (dma_channel_get_irq0_status(dma_adc_channel2)) {
       adc_select_input(0);
 
-      adc_buf_ready = 2;
+      adc_buf_ready = 0x3fff | (1 << 14); // lookup index: 1
       adc_buf_done_time_us = time_us_32();
 
       dma_channel_acknowledge_irq0(dma_adc_channel2);
    }
 }
 
-bool fetch_get_analog_buffer(audio_channel_t channel, uint16_t* samples, uint8_t** buffer) {
-   if (!adc_buf_ready) // no buffers ready
+bool fetch_analog_buffer(analog_channel_t channel, uint16_t* samples, uint8_t** buffer, uint32_t* capture_end_time_us) {
+   if (!channel || channel > TOTAL_ANALOG_CHANNELS)
       return false;
 
-   const uint8_t* buf = adc_buf_ready == 1 ? capture_adc_buf1 : capture_adc_buf2;
+   const uint16_t index = channel - 1;
+   const uint16_t buf_ready = adc_buf_ready; // local copy, since volatile
 
+   // Check if processed buffer needs to be updated
+   const bool needs_update = buf_ready & (1 << channel);
+
+   // get filled capture buffer
+   const uint8_t* src = capture_buf_lookup[(buf_ready & (3 << 14)) >> 14];
    switch (channel) {
+      case AUDIO_CHANNEL_LEFT:
+      case AUDIO_CHANNEL_RIGHT:
       case AUDIO_CHANNEL_MIC: {
-         for (uint x = 0; x < sizeof(audio_buffer_m); x++)
-            audio_buffer_m[x] = buf[(x * SAMPLED_ADC_CHANNELS)];
-         *buffer = audio_buffer_m;
-         *samples = sizeof(audio_buffer_m);
-         return true;
-      }
-      case AUDIO_CHANNEL_LEFT: {
-         for (uint x = 0; x < sizeof(audio_buffer_l); x++)
-            audio_buffer_l[x] = buf[(x * SAMPLED_ADC_CHANNELS) + 1];
-         *buffer = audio_buffer_l;
-         *samples = sizeof(audio_buffer_l);
-         return true;
-      }
-      case AUDIO_CHANNEL_RIGHT: {
-         for (uint x = 0; x < sizeof(audio_buffer_r); x++)
-            audio_buffer_r[x] = buf[(x * SAMPLED_ADC_CHANNELS) + 2];
-         *buffer = audio_buffer_r;
-         *samples = sizeof(audio_buffer_r);
-         return true;
+         if (needs_update) {                                  // update cached buffer from DMA capture buffer
+            adc_end_time_us = adc_buf_done_time_us;
+            for (uint x = 0; x < sizeof(adc_buffers[0]); x++) // unravel interleaved capture buffer
+               adc_buffers[index][x] = src[(x * SAMPLED_ADC_CHANNELS) + adc_stripe_lookup[channel]];
+         }
+
+         *capture_end_time_us = adc_end_time_us;
+
+         *buffer = adc_buffers[index];
+         *samples = sizeof(adc_buffers[0]);
+         break;
       }
       default:
          return false;
+   }
+
+   /*
+   #ifndef NDEBUG
+      if (buf_ready != adc_buf_ready)
+         LOG_WARN("Analog capture IRQ occurred during fetch!\n");
+   #endif
+   */
+
+   if (needs_update) // clear flag
+      adc_buf_ready &= ~(1 << channel);
+
+   return needs_update;
+}
+
+uint32_t get_capture_duration_us(analog_channel_t channel) {
+   switch (channel) {
+      case AUDIO_CHANNEL_LEFT:
+      case AUDIO_CHANNEL_RIGHT:
+      case AUDIO_CHANNEL_MIC: {
+         return adc_capture_duration_us;
+      }
+      default:
+         return 1;
    }
 }
 
