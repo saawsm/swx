@@ -5,6 +5,10 @@
 
 #include "output.h"
 
+#if CHANNEL_COUNT > 4
+#warning "swx protocol is limited to 4 output channels! See comments in message.h"
+#endif
+
 #define REPLY_MSG(...)                                                                                                                                                   \
    do {                                                                                                                                                                  \
       const uint8_t data[] = {MSG_ID_BIT | (ctrl), __VA_ARGS__};                                                                                                         \
