@@ -32,6 +32,9 @@ typedef enum {
    TOTAL_PARAMS // Number of parameters in enum, used for arrays
 } param_t;
 
+// The notify bit flag settable within the TARGET_MODE value. Asserts notify GPIO and updates parameter flags.
+#define TARGET_MODE_NOTIFY_BIT (1 << 15)
+
 typedef enum {
    /// The actual parameter value.
    TARGET_VALUE = 0,
@@ -83,6 +86,9 @@ typedef struct {
    int8_t step;
    uint32_t next_update_time_us;
    uint32_t update_period_us;
+
+   // Status flags for when the param value has reached an extent (min/max). Flag bits should be reset when acknowledged.
+   uint8_t flags;
 
 } parameter_t;
 

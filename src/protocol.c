@@ -131,7 +131,7 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
                parameter_set(&channels[mp].parameters[param], target, val);
             } else { // read
                val = channels[mp].parameters[param].values[target];
-               REPLY_MSG(mp, HL16(val));
+               REPLY_MSG(mp, buffer[0], HL16(val));
             }
 
             LOG_DEBUG("MSG_CMD_CH_PARAM: write=%u ch=%u param=%u target=%u value=%u\n", write, mp, param, target, val);
@@ -185,6 +185,27 @@ void parse_message(msg_ch_t origin, uint8_t ctrl) {
       }
 
       case MSG_CMD_AI_READ: { // Read Audio Input (RO)
+         break;
+      }
+
+      case MSG_CMD_CH_PARAM_FLAGS: { // Channel Parameter State Flags (R/W)
+         uint8_t buffer[2];
+         read_blocking(origin, buffer, write ? sizeof(buffer) : 1);
+
+         const uint8_t param = buffer[0] >> 4;
+
+         if (param < TOTAL_PARAMS) {
+            parameter_t* p = &channels[mp].parameters[param];
+            REPLY_MSG(mp, buffer[0], p->flags);
+
+            LOG_DEBUG("MSG_CMD_CH_PARAM_FLAGS: write=%u ch=%u param=%u flags=%u clear=%u\n", write, mp, param, p->flags, buffer[1]);
+
+            if (write) // clear bits
+               p->flags &= ~buffer[1];
+
+         } else {
+            LOG_WARN("MSG_CMD_CH_PARAM_FLAGS: write=%u ch=%u param=%u clear=%u - Parameter invalid! Ignoring...\n", write, mp, param, buffer[1]);
+         }
          break;
       }
 

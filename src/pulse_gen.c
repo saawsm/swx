@@ -3,6 +3,8 @@
 #include "output.h"
 #include "audio.h"
 
+#include "util/gpio.h"
+
 #define STATE_COUNT (4)
 
 static const param_t STATE_SEQUENCE[STATE_COUNT] = {
@@ -108,8 +110,11 @@ void pulse_gen_process() {
 }
 
 static inline void parameter_update(parameter_t* p) {
+   // Get the mode without the notify bit
+   const uint16_t mode = p->values[TARGET_MODE] & ~TARGET_MODE_NOTIFY_BIT;
+
    // Skip update if parameter is static
-   if (p->values[TARGET_MODE] == TARGET_MODE_DISABLED || p->values[TARGET_RATE] == 0 || p->step == 0)
+   if (mode == TARGET_MODE_DISABLED || p->values[TARGET_RATE] == 0 || p->step == 0)
       return;
 
    if (time_us_32() < p->next_update_time_us)
@@ -123,7 +128,8 @@ static inline void parameter_update(parameter_t* p) {
    // If value reached min/max or wrapped
    if ((p->values[TARGET_VALUE] <= p->values[TARGET_MIN]) || (p->values[TARGET_VALUE] >= p->values[TARGET_MAX]) ||
        (p->step < 0 && p->values[TARGET_VALUE] > previous_value) || (p->step > 0 && p->values[TARGET_VALUE] < previous_value)) {
-      switch (p->values[TARGET_MODE]) {
+      const bool notify = p->values[TARGET_MODE] & TARGET_MODE_NOTIFY_BIT;
+      switch (mode) {
          case TARGET_MODE_DOWN_UP:
          case TARGET_MODE_UP_DOWN: { // Invert step direction if UP/DOWN mode
             p->values[TARGET_VALUE] = p->step < 0 ? p->values[TARGET_MIN] : p->values[TARGET_MAX];
@@ -136,12 +142,22 @@ static inline void parameter_update(parameter_t* p) {
          case TARGET_MODE_DOWN_RESET: // Reset to MAX if reversed sawtooth mode
             p->values[TARGET_VALUE] = p->values[TARGET_MAX];
             break;
-         case TARGET_MODE_UP:
-         case TARGET_MODE_DOWN: // Disable cycling for no-reset modes
+         case TARGET_MODE_UP: // Disable cycling for no-reset modes and clear the notify bit
+            p->values[TARGET_VALUE] = p->values[TARGET_MAX];
             p->values[TARGET_MODE] = TARGET_MODE_DISABLED;
             break;
-         default:
+         case TARGET_MODE_DOWN: // Disable cycling for no-reset modes and clear the notify bit
+            p->values[TARGET_VALUE] = p->values[TARGET_MIN];
+            p->values[TARGET_MODE] = TARGET_MODE_DISABLED;
             break;
+            break;
+         default:
+            return;
+      }
+      // if the notify bit is set, update flags and assert notify pin
+      if (notify) {
+         p->flags |= (1 << mode);
+         gpio_assert(PIN_INT);
       }
    }
 }
@@ -149,8 +165,11 @@ static inline void parameter_update(parameter_t* p) {
 void parameter_set(parameter_t* p, target_t target, uint16_t value) {
    p->values[target] = value;
 
+   // Get the mode without the notify bit
+   const uint16_t mode = p->values[TARGET_MODE] & ~TARGET_MODE_NOTIFY_BIT;
+
    // Determine steps and update period based on cycle rate
-   if (p->values[TARGET_MODE] != TARGET_MODE_DISABLED && p->values[TARGET_RATE] != 0) {
+   if (mode != TARGET_MODE_DISABLED && p->values[TARGET_RATE] != 0) {
       const int8_t previous_step = p->step;
 
       p->step = 1; // Start at 1 step for highest resolution
@@ -175,8 +194,8 @@ void parameter_set(parameter_t* p, target_t target, uint16_t value) {
       }
 
       // Invert step direction if MODE_DOWN or out of sync
-      if (p->values[TARGET_MODE] == TARGET_MODE_DOWN_RESET || p->values[TARGET_MODE] == TARGET_MODE_DOWN ||
-          (p->values[TARGET_MODE] == TARGET_MODE_DOWN_UP && previous_step > 0) || (p->values[TARGET_MODE] == TARGET_MODE_UP_DOWN && previous_step < 0))
+      if (mode == TARGET_MODE_DOWN_RESET || mode == TARGET_MODE_DOWN || (mode == TARGET_MODE_DOWN_UP && previous_step > 0) ||
+          (mode == TARGET_MODE_UP_DOWN && previous_step < 0))
          p->step = -(p->step);
    }
 }

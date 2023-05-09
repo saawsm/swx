@@ -62,6 +62,8 @@ Note:
 #define MSG_CMD_CH_LL_PULSE (13) // Immediately pulse channel, bypassing pulse generation (R/W)
 #define MSG_CMD_CH_LL_POWER (14) // Immediately set channel power, bypassing pulse generation (WO)
 
+#define MSG_CMD_CH_PARAM_FLAGS (15) // Channel Parameter State Flags (R/W)
+
 // ----------------------------------------------------------------------------------------------------
 
 #define MSG_CTRL(mode, cmd, mp) ((mode) << MSG_MODE) | ((cmd) << MSG_CMD) | ((mp) << MSG_MP)
