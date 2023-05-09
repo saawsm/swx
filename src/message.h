@@ -24,8 +24,7 @@ Note:
     I think the trade off in performance and simplicity wins over the edge case of supporting devices with more than 4 channels.
 */
 
-#define MSG_ID (7)
-#define MSG_ID_MASK (1 << MSG_ID)
+#define MSG_ID_BIT (1 << 7)
 
 // CMD Read/Write
 #define MSG_MODE (6)

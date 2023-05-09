@@ -7,7 +7,7 @@
 
 #define REPLY_MSG(...)                                                                                                                                                   \
    do {                                                                                                                                                                  \
-      const uint8_t data[] = {(1 << MSG_ID) | (ctrl), __VA_ARGS__};                                                                                                      \
+      const uint8_t data[] = {MSG_ID_BIT | (ctrl), __VA_ARGS__};                                                                                                      \
       write_blocking(origin, &data, sizeof(data));                                                                                                                       \
    } while (0)
 
@@ -31,7 +31,7 @@ void protocol_process(msg_ch_t src) {
 }
 
 void parse_message(msg_ch_t origin, uint8_t ctrl) {
-   if (!(ctrl & MSG_ID_MASK)) // Discard any messages wihtout the ID bit set
+   if (!(ctrl & MSG_ID_BIT)) // Discard any messages wihtout the ID bit set
       return;
 
    const bool write = (ctrl & MSG_MODE_MASK);
