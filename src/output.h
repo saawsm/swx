@@ -1,6 +1,7 @@
 #ifndef _OUTPUT_H
 #define _OUTPUT_H
 
+#include "swx.h"
 #include "channel.h"
 
 #ifndef CHANNEL_COUNT

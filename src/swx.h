@@ -2,16 +2,11 @@
 #define _SWX_H
 
 #include <pico/stdlib.h>
+
 #include <stdio.h>
 #include <string.h>
 
 #define SWX_VERSION (1100)
-
-#if defined(RASPBERRYPI_PICO)
-#define BOARD_PICO
-#elif defined(RASPBERRYPI_PICO_W)
-#define BOARD_PICO_W
-#endif
 
 #if !defined(PIN_LED) && defined(PICO_DEFAULT_LED_PIN)
 #define PIN_LED (PICO_DEFAULT_LED_PIN)

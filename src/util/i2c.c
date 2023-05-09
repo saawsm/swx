@@ -1,7 +1,5 @@
 #include "i2c.h"
 
-#include "../swx.h"
-
 #include <pico/mutex.h>
 
 #ifdef I2C_MUTEX_TIMEOUT

@@ -1,4 +1,6 @@
 #include "../swx.h"
+
+#ifdef USE_ADS1015_ADC
 #include "../util/i2c.h"
 
 #define ADS1015_CHANNEL_COUNT (4)
@@ -179,3 +181,5 @@ float adc_compute_volts(uint16_t counts) {
    }
    return counts * (fsRange / 2048);
 }
+
+#endif

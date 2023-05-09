@@ -16,3 +16,30 @@ _\*2: Supports sharing the same IO between channels_
 
 View the [SW32](https://github.com/saawsm/SW32) or [SW22](https://github.com/saawsm/SW22) projects for example hardware.
 
+# Getting Started
+
+```bat
+git clone -b master --recurse-submodules https://github.com/saawsm/swx
+```
+
+_Use `-b develop` instead for the develop branch of swx. The dev branch can be unstable, use with caution._
+
+### Toolchain Setup
+
+Ensure you can build C/C++ projects written using [pico-sdk](https://github.com/raspberrypi/pico-sdk).
+
+### Building
+
+Board specific hardware configuration can be found in the `boards` folder.
+
+```bat
+mkdir build
+cd build
+cmake -DPICO_BOARD=<board> ..
+make -j4
+```
+
+Replace `<board>` with the board name found in the `boards` folder (e.g. `SW22`). 
+Additional options can be found by using `cmake -L ..` or by viewing the top of the `CMakeLists.txt` file.
+
+Built firmware named `swx.uf2` or `swx.bin` will be located in the `build` folder.

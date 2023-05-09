@@ -1,6 +1,7 @@
 #ifndef _GPIO_H
 #define _GPIO_H
 
+#include "../swx.h"
 #include <hardware/gpio.h>
 
 static inline void init_gpio(uint pin, bool out, bool value) {

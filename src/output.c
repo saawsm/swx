@@ -75,8 +75,10 @@ bool output_calibrate_all() {
 
    bool success = true;
    for (uint8_t index = 0; index < CHANNEL_COUNT; index++) {
-      if (((CH_CAL_ENABLED >> index) & 1) == 0) // Skip calibration for disabled channel slots
+      if (((CH_CAL_ENABLED >> index) & 1) == 0) { // Skip calibration for disabled channel slots
+         LOG_WARN("Skipping calibration of channel %u...\n", index);
          continue;
+      }
       success &= (channel_calibrate(&channels[index]) == CHANNEL_READY);
    }
 

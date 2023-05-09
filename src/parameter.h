@@ -1,7 +1,7 @@
 #ifndef _PARAMETERS_H
 #define _PARAMETERS_H
 
-#include <inttypes.h>
+#include "swx.h"
 
 typedef enum {
    /// The intensity of the signal as a percent (0 to 1000).

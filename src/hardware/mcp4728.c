@@ -1,4 +1,6 @@
 #include "../swx.h"
+
+#ifdef USE_MCP4728_DAC
 #include "../util/i2c.h"
 #include "../util/gpio.h"
 
@@ -65,3 +67,4 @@ bool set_dac_direct(uint8_t channel, uint16_t value) {
    }
    return true;
 }
+#endif

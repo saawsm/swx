@@ -1,7 +1,12 @@
 #ifndef _I2C_H
 #define _I2C_H
 
+#include "../swx.h"
 #include <hardware/i2c.h>
+
+#ifndef I2C_DEVICE_TIMEOUT
+#define I2C_DEVICE_TIMEOUT (2000)
+#endif
 
 void i2c_scan(i2c_inst_t* i2c);
 
