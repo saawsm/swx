@@ -7,7 +7,6 @@
 #include <hardware/spi.h>
 
 #include "output.h"
-#include "pulse_gen.h"
 #include "protocol.h"
 #include "analog_capture.h"
 
@@ -17,6 +16,8 @@
 void core1_entry();
 
 bool blink_led_timer_cb(repeating_timer_t* rt);
+
+extern void pulse_gen_process();
 
 repeating_timer_t failure_timer;
 

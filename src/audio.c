@@ -1,5 +1,4 @@
-#include "audio.h"
-
+#include "swx.h"
 #include <stdlib.h>
 
 #include "analog_capture.h"
@@ -11,7 +10,7 @@ static void process_sample(channel_t* ch, uint8_t channel, uint32_t time_us, int
 static int16_t last_sample_values[CHANNEL_COUNT] = {0};
 static uint32_t last_process_times_us[CHANNEL_COUNT] = {0};
 
-/* 
+/*
  * Process audio in a similar way to the Audio3 mode of a mk312b box.
  *
  * - Every zero crossing, trigger a pulse, but limit pulse frequency to the maximum parameter or 500 Hz, whatever is lower.

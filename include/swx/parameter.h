@@ -1,7 +1,7 @@
-#ifndef _PARAMETERS_H
-#define _PARAMETERS_H
+#ifndef _PARAMETER_H
+#define _PARAMETER_H
 
-#include "swx.h"
+#include <inttypes.h>
 
 typedef enum {
    /// The intensity of the signal as a percent (0 to 1000).
@@ -80,18 +80,4 @@ typedef enum {
 
 } target_mode_t;
 
-typedef struct {
-   uint16_t values[TOTAL_TARGETS];
-
-   int8_t step;
-   uint32_t next_update_time_us;
-   uint32_t update_period_us;
-
-   // Status flags for when the param value has reached an extent (min/max). Flag bits should be reset when acknowledged.
-   uint8_t flags;
-
-} parameter_t;
-
-void parameter_set(parameter_t* parameter, target_t target, uint16_t value);
-
-#endif // _PARAMETERS_H
+#endif // _PARAMETER_H

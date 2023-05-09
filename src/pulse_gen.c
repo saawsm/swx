@@ -1,7 +1,5 @@
 #include "swx.h"
-#include "parameter.h"
 #include "output.h"
-#include "audio.h"
 
 #include "util/gpio.h"
 
@@ -13,6 +11,8 @@ static const param_t STATE_SEQUENCE[STATE_COUNT] = {
     PARAM_ON_TIME,
     PARAM_OFF_RAMP_TIME,
 };
+
+extern void audio_process(channel_t* ch, uint8_t channel, uint16_t power);
 
 static inline void parameter_update(parameter_t* p);
 
