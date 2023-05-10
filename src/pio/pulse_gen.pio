@@ -48,6 +48,5 @@ static inline void pulse_gen_program_init(PIO pio, uint sm, uint offset, uint pi
     sm_config_set_clkdiv(&c, div);
 
     pio_sm_init(pio, sm, offset, &c);
-    pio_sm_set_enabled(pio, sm, true);
 }
 %}

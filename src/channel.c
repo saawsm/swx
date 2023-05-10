@@ -191,6 +191,7 @@ channel_status_t channel_calibrate(channel_t* ch) {
       // Init PIO state machine with pulse gen program
       // Must be done here, since PIO uses different GPIO muxing compared to regular GPIO
       pulse_gen_program_init(ch->pio, ch->sm, pio_offsets[pio_index], ch->pin_gate_a, ch->pin_gate_b);
+      pio_sm_set_enabled(ch->pio, ch->sm, true); // Start the PIO state machine
    } else {
       ch->status = CHANNEL_FAULT;
       LOG_ERROR("Calibration failed! pio=%u sm=%d - ERROR!\n", pio_index, ch->sm);
