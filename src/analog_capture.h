@@ -19,7 +19,7 @@ void analog_capture_free();
 void analog_capture_start();
 void analog_capture_stop();
 
-bool fetch_analog_buffer(analog_channel_t channel, uint16_t* samples, uint8_t** buffer, uint32_t* capture_end_time_us);
+bool fetch_analog_buffer(analog_channel_t channel, uint16_t* samples, uint16_t** buffer, uint32_t* capture_end_time_us);
 
 uint32_t get_capture_duration_us(analog_channel_t channel);
 

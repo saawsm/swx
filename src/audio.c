@@ -4,10 +4,10 @@
 #include "analog_capture.h"
 #include "output.h"
 
-static void process_samples(channel_t* ch, uint8_t channel, uint16_t sample_count, uint8_t* buffer, float* out_intensity, uint32_t capture_end_time_us);
-static void process_sample(channel_t* ch, uint8_t channel, uint32_t time_us, int16_t value);
+static void process_samples(channel_t* ch, uint8_t channel, uint16_t sample_count, uint16_t* buffer, float* out_intensity, uint32_t capture_end_time_us);
+static void process_sample(channel_t* ch, uint8_t channel, uint32_t time_us, int32_t value);
 
-static int16_t last_sample_values[CHANNEL_COUNT] = {0};
+static int32_t last_sample_values[CHANNEL_COUNT] = {0};
 static uint32_t last_process_times_us[CHANNEL_COUNT] = {0};
 
 /*
@@ -24,7 +24,7 @@ static uint32_t last_process_times_us[CHANNEL_COUNT] = {0};
  */
 void audio_process(channel_t* ch, uint8_t channel, uint16_t power) {
    uint16_t sample_count;
-   uint8_t* sample_buffer;
+   uint16_t* sample_buffer;
    uint32_t capture_end_time_us = 0;
 
    // Fetch audio from the specific analog channel
@@ -55,10 +55,10 @@ void audio_process(channel_t* ch, uint8_t channel, uint16_t power) {
    }
 }
 
-static void process_samples(channel_t* ch, uint8_t channel, uint16_t sample_count, uint8_t* buffer, float* out_intensity, uint32_t capture_end_time_us) {
+static void process_samples(channel_t* ch, uint8_t channel, uint16_t sample_count, uint16_t* buffer, float* out_intensity, uint32_t capture_end_time_us) {
    // Find the min, max, and mean sample values
-   uint16_t min = UINT16_MAX;
-   uint16_t max = 0;
+   uint32_t min = UINT32_MAX;
+   uint32_t max = 0;
    uint32_t total = 0;
    for (uint16_t x = 0; x < sample_count; x++) {
       if (buffer[x] > max)
@@ -88,13 +88,13 @@ static void process_samples(channel_t* ch, uint8_t channel, uint16_t sample_coun
    // Call process each sample at roughly the time it happened, with a signed value ranging from -128 to +128 (assuming DC offset is ~1.65V)
    for (uint16_t i = 0; i < sample_count; i++) {
       const uint32_t sample_time_us = capture_start_time_us + (sample_duration_us * i);
-      const int16_t value = avg - buffer[i];
+      const int32_t value = avg - buffer[i];
 
       process_sample(ch, channel, sample_time_us, value);
    }
 }
 
-static inline void process_sample(channel_t* ch, uint8_t channel, uint32_t time_us, int16_t value) {
+static inline void process_sample(channel_t* ch, uint8_t channel, uint32_t time_us, int32_t value) {
    // Check for zero crossing
    if (((value > 0 && last_sample_values[channel] <= 0) || (value < 0 && last_sample_values[channel] >= 0))) {
 

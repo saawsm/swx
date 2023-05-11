@@ -9,40 +9,52 @@
 
 #define PIN_ADC_BASE (26)
 
-#define ADC_CAPTURE_DEPTH (1024)
-#define ADC_CAPTURE_RING_BITS (10)
+// The number of analog samples per second per channel. Since 3 ADC channels are being sampled the actual sample rate is 3 times bigger.
+#define ADC_SAMPLES_PER_SECOND (44100)
 
-#define ADC_SAMPLES_PER_SECOND (62500)
-#define SAMPLED_ADC_CHANNELS (3)
+// Number of ADC channels sampled
+#define ADC_SAMPLED_CHANNELS (3)
+
+#define ADC_CAPTURE_COUNT (1024)                                    // Total samples captured per DMA buffer
+#define ADC_SAMPLE_COUNT (ADC_CAPTURE_COUNT / ADC_SAMPLED_CHANNELS) // Number of samples per ADC channel
 
 static void init_pingpong_dma(const uint channel1, const uint channel2, uint dreq, const volatile void* read_addr, volatile void* write_addr1, volatile void* write_addr2,
-                              uint transfer_count, enum dma_channel_transfer_size size, uint ring_bit, uint irq_num, irq_handler_t handler);
-static void irq();
+                              uint transfer_count, enum dma_channel_transfer_size size, uint irq_num, irq_handler_t handler);
+static void dma_adc_handler();
 
-static uint dma_adc_channel1;
-static uint dma_adc_channel2;
+// ------------------------------------------------------------------
+// ADC Capture Variables
+// ------------------------------------------------------------------
 
-// DMA Buffers
-static uint8_t capture_adc_buf1[ADC_CAPTURE_DEPTH] __attribute__((aligned(2048)));
-static uint8_t capture_adc_buf2[ADC_CAPTURE_DEPTH] __attribute__((aligned(2048)));
+static uint dma_adc_ch1;
+static uint dma_adc_ch2;
 
-static const uint8_t* capture_buf_lookup[] = {capture_adc_buf1, capture_adc_buf2};
+// DMA Ping-Pong Buffers - uint16 since ADC is only 12 bit (~9 ENOB)
+static uint16_t adc_capture_buf[2][ADC_CAPTURE_COUNT] __attribute__((aligned(ADC_CAPTURE_COUNT * sizeof(uint16_t))));
 
-// Consumer buffers, updated on request
-static uint8_t adc_buffers[TOTAL_ANALOG_CHANNELS][ADC_CAPTURE_DEPTH / SAMPLED_ADC_CHANNELS] = {0};
+volatile uint8_t buf_adc_ready;
+volatile uint32_t buf_adc_done_time_us;
+
+// ADC consumer buffers, updated on request
+static uint16_t adc_buffers[ADC_SAMPLED_CHANNELS][ADC_SAMPLE_COUNT];
+
+static uint32_t adc_end_time_us; // Cached version of: buf_adc_done_time_us
+
+static const uint32_t adc_capture_duration_us = ADC_CAPTURE_COUNT * (1000000ul / (ADC_SAMPLES_PER_SECOND));
 
 // Lookup Table: Analog channel -> ADC round robin stripe offset
-static const uint8_t adc_stripe_lookup[] = {
+static const uint8_t adc_stripe_offsets[] = {
     [AUDIO_CHANNEL_MIC] = (PIN_AUDIO_MIC - PIN_ADC_BASE),
     [AUDIO_CHANNEL_LEFT] = (PIN_AUDIO_LEFT - PIN_ADC_BASE),
     [AUDIO_CHANNEL_RIGHT] = (PIN_AUDIO_RIGHT - PIN_ADC_BASE),
 };
 
-static volatile uint16_t adc_buf_ready;        // Used in irq: The adc buffer that finished capture, now ready for reading/processing
-static volatile uint32_t adc_buf_done_time_us; // Used in irq: The absolute time the capture finished in microseconds
-static uint32_t adc_end_time_us;               // Cached version of: adc_buf_done_time_us
-
-static const uint32_t adc_capture_duration_us = ADC_CAPTURE_DEPTH * (1000000ul / ADC_SAMPLES_PER_SECOND);
+// Lookup Table: Analog channel -> capture_buf
+static uint16_t* buffers[] = {
+    [AUDIO_CHANNEL_MIC] = adc_buffers[0],
+    [AUDIO_CHANNEL_LEFT] = adc_buffers[1],
+    [AUDIO_CHANNEL_RIGHT] = adc_buffers[2],
+};
 
 void analog_capture_init() {
    LOG_DEBUG("Init analog capture...\n");
@@ -59,21 +71,21 @@ void analog_capture_init() {
                   true,  // Enable DMA data request (DREQ)
                   1,     // DREQ (and IRQ) asserted when at least 1 sample present
                   false, // Don't collect error bit
-                  true   // Reduce samples to 8 bits
+                  false  // Don't reduce samples
    );
 
-   uint32_t divider = 48000000 / ADC_SAMPLES_PER_SECOND;
-   adc_set_clkdiv(divider - 1);
+   static const uint32_t div = 48000000ul / (ADC_SAMPLES_PER_SECOND * ADC_SAMPLED_CHANNELS);
+   adc_set_clkdiv(div - 1);
 
-   // Setup ping-pong DMA for ADC FIFO writing to capture_buf, wrapping once filled
-   dma_adc_channel1 = dma_claim_unused_channel(true);
-   dma_adc_channel2 = dma_claim_unused_channel(true);
-   init_pingpong_dma(dma_adc_channel1, dma_adc_channel2, DREQ_ADC, &adc_hw->fifo, capture_adc_buf1, capture_adc_buf2, ADC_CAPTURE_DEPTH, DMA_SIZE_8,
-                     ADC_CAPTURE_RING_BITS, DMA_IRQ_0, irq);
+   // Setup ping-pong DMA for ADC FIFO writing to adc_capture_buf, wrapping once filled
+   dma_adc_ch1 = dma_claim_unused_channel(true);
+   dma_adc_ch2 = dma_claim_unused_channel(true);
+   init_pingpong_dma(dma_adc_ch1, dma_adc_ch2, DREQ_ADC, &adc_hw->fifo, adc_capture_buf[0], adc_capture_buf[1], ADC_CAPTURE_COUNT, DMA_SIZE_16, DMA_IRQ_0,
+                     dma_adc_handler);
 
    // Start channel 1
-   adc_buf_ready = 0;
-   dma_channel_start(dma_adc_channel1);
+   buf_adc_ready = 0;
+   dma_channel_start(dma_adc_ch1);
 }
 
 void analog_capture_free() {
@@ -82,21 +94,21 @@ void analog_capture_free() {
    analog_capture_stop();
 
    // Errata RP2040-E13
-   dma_channel_set_irq0_enabled(dma_adc_channel1, false);
-   dma_channel_set_irq0_enabled(dma_adc_channel2, false);
+   dma_channel_set_irq0_enabled(dma_adc_ch1, false);
+   dma_channel_set_irq0_enabled(dma_adc_ch2, false);
 
    // Abort both linked DMA channels
-   dma_hw->abort = (1u << dma_adc_channel1) | (1u << dma_adc_channel2);
+   dma_hw->abort = (1u << dma_adc_ch1) | (1u << dma_adc_ch2);
 
    // Wait for all aborts to complete
    while (dma_hw->abort)
       tight_loop_contents();
 
    // Wait for channels to not be busy
-   while (dma_hw->ch[dma_adc_channel1].ctrl_trig & DMA_CH0_CTRL_TRIG_BUSY_BITS)
+   while (dma_hw->ch[dma_adc_ch1].ctrl_trig & DMA_CH0_CTRL_TRIG_BUSY_BITS)
       tight_loop_contents();
 
-   while (dma_hw->ch[dma_adc_channel2].ctrl_trig & DMA_CH0_CTRL_TRIG_BUSY_BITS)
+   while (dma_hw->ch[dma_adc_ch2].ctrl_trig & DMA_CH0_CTRL_TRIG_BUSY_BITS)
       tight_loop_contents();
 
    adc_set_round_robin(0);
@@ -113,83 +125,82 @@ void analog_capture_stop() {
    adc_run(false);
 }
 
-static void __not_in_flash_func(irq)() {
-   if (dma_channel_get_irq0_status(dma_adc_channel1)) {
+static void __not_in_flash_func(dma_adc_handler)() {
+   if (dma_channel_get_irq0_status(dma_adc_ch1)) {
       adc_select_input(0);
 
-      adc_buf_ready = 0x3fff | (0 << 14); // lookup index: 0
-      adc_buf_done_time_us = time_us_32();
+      buf_adc_ready = 0xFE; // lookup index: 0
+      buf_adc_done_time_us = time_us_32();
 
-      dma_channel_acknowledge_irq0(dma_adc_channel1);
-   } else if (dma_channel_get_irq0_status(dma_adc_channel2)) {
+      dma_channel_acknowledge_irq0(dma_adc_ch1);
+   } else if (dma_channel_get_irq0_status(dma_adc_ch2)) {
       adc_select_input(0);
 
-      adc_buf_ready = 0x3fff | (1 << 14); // lookup index: 1
-      adc_buf_done_time_us = time_us_32();
+      buf_adc_ready = 0xFF; // lookup index: 1
+      buf_adc_done_time_us = time_us_32();
 
-      dma_channel_acknowledge_irq0(dma_adc_channel2);
+      dma_channel_acknowledge_irq0(dma_adc_ch2);
    }
 }
 
-bool fetch_analog_buffer(analog_channel_t channel, uint16_t* samples, uint8_t** buffer, uint32_t* capture_end_time_us) {
-   if (!channel || channel > TOTAL_ANALOG_CHANNELS)
-      return false;
-
-   const uint16_t index = channel - 1;
-   const uint16_t buf_ready = adc_buf_ready; // local copy, since volatile
-
-   // Check if processed buffer needs to be updated
-   const bool needs_update = buf_ready & (1 << channel);
-
-   // get filled capture buffer
-   const uint8_t* src = capture_buf_lookup[(buf_ready & (3 << 14)) >> 14];
+bool fetch_analog_buffer(analog_channel_t channel, uint16_t* samples, uint16_t** buffer, uint32_t* capture_end_time_us) {
    switch (channel) {
       case AUDIO_CHANNEL_LEFT:
       case AUDIO_CHANNEL_RIGHT:
       case AUDIO_CHANNEL_MIC: {
-         if (needs_update) {                                  // update cached buffer from DMA capture buffer
-            adc_end_time_us = adc_buf_done_time_us;
-            for (uint x = 0; x < sizeof(adc_buffers[0]); x++) // unravel interleaved capture buffer
-               adc_buffers[index][x] = src[(x * SAMPLED_ADC_CHANNELS) + adc_stripe_lookup[channel]];
+         const uint8_t ready = buf_adc_ready; // Local copy, since volatile
+
+         // Check if this channel has new or unprocessed buffer data available
+         const bool available = ready & (1 << channel);
+         if (available) {
+            const uint16_t* src = adc_capture_buf[ready & 1];   // Source DMA buffer
+            const uint8_t offset = adc_stripe_offsets[channel]; // ADC round robin offset
+
+            // Unravel interleaved capture buffer, and shift from 12 bit samples to 10 bit
+            for (uint x = 0; x < ADC_SAMPLE_COUNT; x++)
+               buffers[channel][x] = (src[(x * ADC_SAMPLED_CHANNELS) + offset] & 0xFFF) >> 2;
+
+            adc_end_time_us = buf_adc_done_time_us; // Cache done time
+
+            buf_adc_ready &= ~(1 << channel);       // Clear flag
          }
 
          *capture_end_time_us = adc_end_time_us;
-
-         *buffer = adc_buffers[index];
-         *samples = sizeof(adc_buffers[0]);
-         break;
+         *buffer = buffers[channel];
+         *samples = ADC_SAMPLE_COUNT;
+         return available;
       }
       default:
+         *capture_end_time_us = 0;
+         *buffer = NULL;
+         *samples = 0;
          return false;
    }
-
-   /*
-   #ifndef NDEBUG
-      if (buf_ready != adc_buf_ready)
-         LOG_WARN("Analog capture IRQ occurred during fetch!\n");
-   #endif
-   */
-
-   if (needs_update) // clear flag
-      adc_buf_ready &= ~(1 << channel);
-
-   return needs_update;
 }
 
 uint32_t get_capture_duration_us(analog_channel_t channel) {
    switch (channel) {
       case AUDIO_CHANNEL_LEFT:
       case AUDIO_CHANNEL_RIGHT:
-      case AUDIO_CHANNEL_MIC: {
+      case AUDIO_CHANNEL_MIC:
          return adc_capture_duration_us;
-      }
       default:
          return 1;
    }
 }
 
+static inline uint32_t log2i(uint32_t n) {
+   uint32_t level = 0;
+   while (n >>= 1)
+      level++;
+   return level;
+}
+
 static void init_pingpong_dma(const uint channel1, const uint channel2, uint dreq, const volatile void* read_addr, volatile void* write_addr1, volatile void* write_addr2,
-                              uint transfer_count, enum dma_channel_transfer_size size, uint ring_bit, uint irq_num, irq_handler_t handler) {
+                              uint transfer_count, enum dma_channel_transfer_size size, uint irq_num, irq_handler_t handler) {
+   // Ring bit must be log2 of total bytes transferred
+   const uint32_t ring_bit = log2i(transfer_count * (size == DMA_SIZE_32 ? 4 : (size == DMA_SIZE_16 ? 2 : 1)));
+
    // Channel 1
    dma_channel_config c1 = dma_channel_get_default_config(channel1);
    channel_config_set_transfer_data_size(&c1, size);
