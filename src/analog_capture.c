@@ -20,6 +20,7 @@
 
 static void init_pingpong_dma(const uint channel1, const uint channel2, uint dreq, const volatile void* read_addr, volatile void* write_addr1, volatile void* write_addr2,
                               uint transfer_count, enum dma_channel_transfer_size size, uint irq_num, irq_handler_t handler);
+static void dma_channels_abort(uint ch1, uint ch2, uint irq_num);
 static void dma_adc_handler();
 
 // ------------------------------------------------------------------
@@ -93,23 +94,7 @@ void analog_capture_free() {
 
    analog_capture_stop();
 
-   // Errata RP2040-E13
-   dma_channel_set_irq0_enabled(dma_adc_ch1, false);
-   dma_channel_set_irq0_enabled(dma_adc_ch2, false);
-
-   // Abort both linked DMA channels
-   dma_hw->abort = (1u << dma_adc_ch1) | (1u << dma_adc_ch2);
-
-   // Wait for all aborts to complete
-   while (dma_hw->abort)
-      tight_loop_contents();
-
-   // Wait for channels to not be busy
-   while (dma_hw->ch[dma_adc_ch1].ctrl_trig & DMA_CH0_CTRL_TRIG_BUSY_BITS)
-      tight_loop_contents();
-
-   while (dma_hw->ch[dma_adc_ch2].ctrl_trig & DMA_CH0_CTRL_TRIG_BUSY_BITS)
-      tight_loop_contents();
+   dma_channels_abort(dma_adc_ch1, dma_adc_ch2, DMA_IRQ_0);
 
    adc_set_round_robin(0);
    adc_fifo_drain();
@@ -244,4 +229,29 @@ static void init_pingpong_dma(const uint channel1, const uint channel2, uint dre
    // Add IRQ handler
    irq_add_shared_handler(irq_num, handler, PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY);
    irq_set_enabled(irq_num, true);
+}
+
+static void dma_channels_abort(uint ch1, uint ch2, uint irq_num) {
+   // Errata RP2040-E13
+   if (irq_num == DMA_IRQ_0) {
+      dma_channel_set_irq0_enabled(ch1, false);
+      dma_channel_set_irq0_enabled(ch2, false);
+   } else {
+      dma_channel_set_irq1_enabled(ch1, false);
+      dma_channel_set_irq1_enabled(ch2, false);
+   }
+
+   // Abort both linked DMA channels
+   dma_hw->abort = (1u << ch1) | (1u << ch2);
+
+   // Wait for all aborts to complete
+   while (dma_hw->abort)
+      tight_loop_contents();
+
+   // Wait for channels to not be busy
+   while (dma_hw->ch[ch1].ctrl_trig & DMA_CH0_CTRL_TRIG_BUSY_BITS)
+      tight_loop_contents();
+
+   while (dma_hw->ch[ch2].ctrl_trig & DMA_CH0_CTRL_TRIG_BUSY_BITS)
+      tight_loop_contents();
 }
