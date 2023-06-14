@@ -1,6 +1,6 @@
 ; Based on: https://github.com/CrashOverride85/zc95/blob/2f95bc6a729ece89606f52a9b8df8a882b6cf8bb/source/zc624/pulse_gen.pio
 
-.program pulse_gen
+.program pio_pulse_gen
 
 ; assuming each clock cycle is 1us
 
@@ -38,7 +38,7 @@ static inline void pulse_gen_program_init(PIO pio, uint sm, uint offset, uint pi
     pio_gpio_init(pio, pin_gate_b);
     pio_sm_set_consecutive_pindirs(pio, sm, pin_gate_a, 2, true);
 
-    pio_sm_config c = pulse_gen_program_get_default_config(offset);
+    pio_sm_config c = pio_pulse_gen_program_get_default_config(offset);
     sm_config_set_set_pins(&c, pin_gate_a, 2);
     
     float cycle_length_us = 0.5f;
@@ -48,6 +48,5 @@ static inline void pulse_gen_program_init(PIO pio, uint sm, uint offset, uint pi
     sm_config_set_clkdiv(&c, div);
 
     pio_sm_init(pio, sm, offset, &c);
-    pio_sm_set_enabled(pio, sm, true);
 }
 %}

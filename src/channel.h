@@ -2,81 +2,82 @@
 #define _CHANNEL_H
 
 #include "swx.h"
+#include "analog_capture.h"
+
+#include "status.h"
+#include "parameter.h"
 
 #include <hardware/pio.h>
 
-#include "hardware/adc.h"
-#include "hardware/dac.h"
+#define CHANNEL_POWER_MAX (1000)
 
-#include "pulse_queue.h"
+#define CH(pinGateA, pinGateB, dacChannel, adcChannel, pio_hw, sm_index, calThresholdOk, calThresholdOver, calOffset)                                                    \
+   {                                                                                                                                                                     \
+      .pin_gate_a = (pinGateA), .pin_gate_b = (pinGateB), .dac_channel = (dacChannel), .adc_channel = (adcChannel), .pio = (pio_hw), .sm = (sm_index),                   \
+      .cal_threshold_ok = (calThresholdOk), .cal_threshold_over = (calThresholdOver), .cal_offset = (calOffset)                                                          \
+   }
 
-// #define CH_IGNORE_CAL_ERRORS  // Ignore calibration errors - Caution!
+typedef struct {
+   uint16_t values[TOTAL_TARGETS];
 
-#ifdef CH_IGNORE_CAL_ERRORS
-   #warning "Channel calibration errors are ignored! Output modules could overload!"
-#endif
+   int8_t step;
+   uint32_t next_update_time_us;
+   uint32_t update_period_us;
 
-namespace swx {
+   // Status flags for when the param value has reached an extent (min/max). Flag bits should be reset when acknowledged.
+   uint8_t flags;
 
-   class Channel final {
-   public:
-      enum Status : uint8_t { INVALID = 0, FAULT, UNINITIALIZED, READY, CALIBRATING };
+} parameter_t;
 
-      const uint8_t index;
+typedef struct {
+   const uint8_t pin_gate_a; // GPIO pin for NFET gate A
+   const uint8_t pin_gate_b; // GPIO pin for NFET gate B
 
-      const uint8_t pinGateA; // The gate pin for leg A
-      const uint8_t pinGateB; // The gate pin for leg B
+   const uint8_t dac_channel;
+   const uint8_t adc_channel;
 
-      const uint8_t dacChannel;
-      const uint8_t adcChannel;
+   const PIO pio;                  // Hardware PIO instance
+   const int sm;                   // PIO state machine index
 
-      const float calThresholdOk;
-      const float calThresholdOver;
-      const uint16_t calOffPoint;
+   const float cal_threshold_ok;   // OK voltage threshold for calibration
+   const float cal_threshold_over; // Over voltage threshold for calibration
+   const uint16_t cal_offset;      // Calibration offset
 
-   private:
-      PulseQueue& queue;
-      Adc& adc;
-      Dac& dac;
+   uint16_t cal_value;             // Calibration value
 
-      pio_hw_t* const pio;
-      const uint8_t sm;
-      const uint pio_program_offset;
+   channel_status_t status;
 
-      uint16_t calValue;
+   // Pulse Generation Variables
+   bool gen_enabled;                     // If true, pulse and power from pulse generator will be output to channel
 
-      Status status;
+   uint16_t power_level;                 // The power level of the channel in percent (scales the power level dynamic parameter)
 
-   public:
-      Channel(uint8_t index, uint8_t pinGateA, uint8_t pinGateB, Adc& adc, uint8_t adcChannel, Dac& dac, uint8_t dacChannel, PulseQueue& queue, pio_hw_t* pio,
-              uint8_t sm, uint pio_program_offset, float calThresholdOk, float calThresholdOver, uint16_t calOffPoint);
-      ~Channel();
+   analog_channel_t audio_src;           // The analog input channel, when set overrides pulse function generator
 
-      Channel(const Channel&) = delete;
-      Channel& operator=(const Channel&) = delete;
-      Channel(Channel&&) = delete;
-      Channel& operator=(Channel&&) = delete;
+   parameter_t parameters[TOTAL_PARAMS]; // Dynamic parameters
 
-      void setPower(uint16_t power);
+   uint32_t last_power_time_us;          // The absolute timestamp since the last power update occurred
+   uint32_t last_pulse_time_us;          // The absolute timestamp since the last pulse occurred
 
-      void pulse(uint16_t pos_us, uint16_t neg_us);
-      inline void pulse(uint16_t us) { pulse(us, us); }
+   uint32_t next_pulse_time_us;          // The absolute timestamp for the scheduled next pulse
+   uint32_t next_state_time_us;          // The absolute timestamp for the scheduled next "waveform" state change (e.g. off -> on_ramp -> on)
+   uint8_t state_index;                  // The current "waveform" state (e.g. off, on_ramp, on)
 
-      void immediatePulse(uint16_t pos_us, uint16_t neg_us);
-      inline void immediatePulse(uint16_t us) { immediatePulse(us, us); }
+} channel_t;
 
-      Status calibrate();
+void channel_init(channel_t* ch);
 
-      Status getStatus() const { return status; }
+void channel_free(channel_t* ch);
 
-      uint16_t getCalibration() const { return calValue; }
+channel_status_t channel_calibrate(channel_t* ch);
 
-      void characterize();
+void channel_pulse(channel_t* ch, uint16_t pos_us, uint16_t neg_us);
 
-   private:
-      float readVoltage();
-   };
+void channel_set_power(channel_t* ch, uint16_t power);
 
-} // namespace swx
+// ------------------------------------------------------------------------------
+
+void parameter_set(parameter_t* parameter, target_t target, uint16_t value);
+
 
 #endif // _CHANNEL_H

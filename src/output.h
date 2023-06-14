@@ -4,65 +4,38 @@
 #include "swx.h"
 #include "channel.h"
 
-#include "pulse_queue.h"
-
-#include <hardware/pio.h>
-
 #ifndef CHANNEL_COUNT
 #define CHANNEL_COUNT (4)
 #endif
 
-#if CHANNEL_COUNT < 1 || CHANNEL_COUNT > 4
-#error "swx only supports 1 to 4 output channels!"
-#endif
+typedef struct {
+   uint8_t channel;
+   uint16_t power;
+} pwr_cmd_t;
 
-#ifndef CH_ENABLED
-   #define CH_ENABLED (0b1111)
-#endif
+typedef struct {
+   uint32_t abs_time_us;
 
-namespace swx {
+   uint8_t channel;
 
-   class Output final {
-      const PIO pio;
-      uint pio_program_offset;
+   uint16_t pos_us;
+   uint16_t neg_us;
+} pulse_t;
 
-      PulseQueue queue;
+void output_init();
+void output_free();
 
-      Channel* channels[CHANNEL_COUNT];
+bool output_calibrate_all();
 
-      Output(PIO pio, Adc& adc, Dac& dac);
-      ~Output();
+void output_process_pulses();
+void output_process_power();
 
-      static Output& getInstance(PIO* pio = nullptr, Adc* adc = nullptr, Dac* dac = nullptr) {
-         static Output output{*pio, *adc, *dac};
-         return output;
-      }
+bool output_pulse(uint8_t channel, uint16_t pos_us, uint16_t neg_us, uint32_t abs_time_us);
+void output_set_power(uint8_t channel, uint16_t power);
 
-   public:
-      Output(const Output&) = delete;
-      Output& operator=(const Output&) = delete;
-      Output(Output&&) = delete;
-      Output& operator=(Output&&) = delete;
+void output_set_gen_enabled(uint8_t channel, bool enabled, uint16_t turn_off_delay_ms);
 
-      bool calibrateAll();
-      void process();
-
-      void setPower(uint8_t channel, uint16_t power);
-
-      void pulse(uint8_t channel, uint16_t pos_us, uint16_t neg_us);
-      void pulse(uint8_t channel, uint16_t us) { pulse(channel, us, us); }
-
-      swx::Channel::Status getStatus(uint8_t channel) const;
-
-      void setPowerEnabled(bool enabled = true);
-      bool isPowerEnabled() const;
-
-      static void init(PIO pio, Adc& adc, Dac& dac) { getInstance(&pio, &adc, &dac); }
-
-      // Must call init() before instance()
-      static Output& instance() { return getInstance(); }
-   };
-
-} // namespace swx
+void set_psu_enabled(bool enabled);
+bool is_psu_enabled();
 
 #endif // _OUTPUT_H
