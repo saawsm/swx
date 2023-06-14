@@ -94,6 +94,7 @@ else() # configure as swx driver firmware using pico-sdk
     target_compile_definitions(${PROJECT_NAME} PRIVATE CH_CAL_ENABLED=${STARTUP_CAL_ENABLED})
 
     if(IGNORE_CAL_ERRORS)
+        message("Ignoring channel calibration errors!")
         target_compile_definitions(${PROJECT_NAME} PRIVATE CH_IGNORE_CAL_ERRORS)
     endif()
 
