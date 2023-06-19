@@ -54,6 +54,7 @@ else() # configure as swx driver firmware using pico-sdk
 
     # Generate PIO headers (place them in the build/generated folder)
     pico_generate_pio_header(${PROJECT_NAME} ../src/pio/pulse_gen.pio OUTPUT_DIR build/generated)
+    pico_generate_pio_header(${PROJECT_NAME} ../src/pio/i2s.pio OUTPUT_DIR build/generated)
 
     # Link the pico standard library 
     target_link_libraries(${PROJECT_NAME} PRIVATE pico_stdlib)

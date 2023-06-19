@@ -127,7 +127,7 @@ void analog_capture_init() {
    const uint program_offset = pio_add_program(pio, &pio_i2s_in_program);
 
    pio_sm_claim(pio, sm);
-   pio_i2s_in_program_init(pio, sm, program_offset, PIN_I2S_SD, PIN_I2S_BCLK, bits_per_sample, false);
+   pio_i2s_in_program_init(pio, sm, program_offset, PIN_I2S_SD, PIN_I2S_BCLK, bits_per_sample);
 
    const float bitClk = I2S_SAMPLES_PER_SECOND * bits_per_sample * 2.0 /* channels */ * 2.0 /* edges per clock */;
    pio_sm_set_clkdiv(pio, sm, (float)clock_get_hz(clk_sys) / bitClk);
