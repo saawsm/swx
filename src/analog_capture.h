@@ -3,7 +3,7 @@
 
 #include "swx.h"
 
-#define TOTAL_ANALOG_CHANNELS (3)
+#define TOTAL_ANALOG_CHANNELS (5)
 
 typedef enum {
    AUDIO_CHANNEL_NONE = 0,
@@ -11,6 +11,9 @@ typedef enum {
    AUDIO_CHANNEL_MIC,
    AUDIO_CHANNEL_LEFT,
    AUDIO_CHANNEL_RIGHT,
+
+   AUDIO_CHANNEL_I2S_LEFT,
+   AUDIO_CHANNEL_I2S_RIGHT,
 } analog_channel_t;
 
 void analog_capture_init();

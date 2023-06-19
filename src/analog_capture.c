@@ -6,22 +6,31 @@
 #include <hardware/irq.h>
 
 #include <hardware/adc.h>
+#include <hardware/pio.h>
+#include <hardware/clocks.h>
+#include "i2s.pio.h"
 
 #define PIN_ADC_BASE (26)
 
 // The number of analog samples per second per channel. Since 3 ADC channels are being sampled the actual sample rate is 3 times bigger.
 #define ADC_SAMPLES_PER_SECOND (44100)
+#define I2S_SAMPLES_PER_SECOND (44100)
 
 // Number of ADC channels sampled
 #define ADC_SAMPLED_CHANNELS (3)
+#define I2S_SAMPLED_CHANNELS (2)
 
 #define ADC_CAPTURE_COUNT (1024)                                    // Total samples captured per DMA buffer
 #define ADC_SAMPLE_COUNT (ADC_CAPTURE_COUNT / ADC_SAMPLED_CHANNELS) // Number of samples per ADC channel
+
+#define I2S_CAPTURE_COUNT (1024)                                    // Total samples captured per DMA buffer
+#define I2S_SAMPLE_COUNT (I2S_CAPTURE_COUNT)                        // Number of samples per I2S channel
 
 static void init_pingpong_dma(const uint channel1, const uint channel2, uint dreq, const volatile void* read_addr, volatile void* write_addr1, volatile void* write_addr2,
                               uint transfer_count, enum dma_channel_transfer_size size, uint irq_num, irq_handler_t handler);
 static void dma_channels_abort(uint ch1, uint ch2, uint irq_num);
 static void dma_adc_handler();
+static void dma_i2s_handler();
 
 // ------------------------------------------------------------------
 // ADC Capture Variables
@@ -50,11 +59,33 @@ static const uint8_t adc_stripe_offsets[] = {
     [AUDIO_CHANNEL_RIGHT] = (PIN_AUDIO_RIGHT - PIN_ADC_BASE),
 };
 
+// ------------------------------------------------------------------
+// I2S Capture Variables
+// ------------------------------------------------------------------
+
+static uint dma_i2s_ch1;
+static uint dma_i2s_ch2;
+
+// DMA Ping-Pong Buffers - uint32 since PIO FIFO is 32 bit
+static uint32_t i2s_capture_buf[2][I2S_CAPTURE_COUNT] __attribute__((aligned(I2S_CAPTURE_COUNT * sizeof(uint32_t))));
+
+volatile uint8_t buf_i2s_ready;
+volatile uint32_t buf_i2s_done_time_us;
+
+// ADC consumer buffers, updated on request
+static uint16_t i2s_buffers[I2S_SAMPLED_CHANNELS][I2S_SAMPLE_COUNT];
+
+static uint32_t i2s_end_time_us; // Cached version of: buf_i2s_done_time_us
+
+static const uint32_t i2s_capture_duration_us = I2S_CAPTURE_COUNT * (1000000ul / (I2S_SAMPLES_PER_SECOND));
+
 // Lookup Table: Analog channel -> capture_buf
 static uint16_t* buffers[] = {
-    [AUDIO_CHANNEL_MIC] = adc_buffers[0],
-    [AUDIO_CHANNEL_LEFT] = adc_buffers[1],
-    [AUDIO_CHANNEL_RIGHT] = adc_buffers[2],
+    [AUDIO_CHANNEL_MIC] = adc_buffers[0],       //
+    [AUDIO_CHANNEL_LEFT] = adc_buffers[1],      //
+    [AUDIO_CHANNEL_RIGHT] = adc_buffers[2],     //
+    [AUDIO_CHANNEL_I2S_LEFT] = i2s_buffers[0],  //
+    [AUDIO_CHANNEL_I2S_RIGHT] = i2s_buffers[1], //
 };
 
 void analog_capture_init() {
@@ -87,6 +118,31 @@ void analog_capture_init() {
    // Start channel 1
    buf_adc_ready = 0;
    dma_channel_start(dma_adc_ch1);
+
+   const PIO pio = pio1;
+   const uint sm = 3;
+
+   const uint bits_per_sample = 16;
+
+   const uint program_offset = pio_add_program(pio, &pio_i2s_in_program);
+
+   pio_sm_claim(pio, sm);
+   pio_i2s_in_program_init(pio, sm, program_offset, PIN_I2S_SD, PIN_I2S_BCLK, bits_per_sample, false);
+
+   const float bitClk = I2S_SAMPLES_PER_SECOND * bits_per_sample * 2.0 /* channels */ * 2.0 /* edges per clock */;
+   pio_sm_set_clkdiv(pio, sm, (float)clock_get_hz(clk_sys) / bitClk);
+
+   // Setup ping-pong DMA for I2S PIO FIFO writing to i2s_capture_buf, wrapping once filled
+   dma_i2s_ch1 = dma_claim_unused_channel(true);
+   dma_i2s_ch2 = dma_claim_unused_channel(true);
+   init_pingpong_dma(dma_i2s_ch1, dma_i2s_ch2, pio_get_dreq(pio, sm, false), (volatile void*)&pio->rxf[sm], i2s_capture_buf[0], i2s_capture_buf[1], I2S_CAPTURE_COUNT,
+                     DMA_SIZE_32, DMA_IRQ_1, dma_i2s_handler);
+
+   pio_sm_set_enabled(pio, sm, true);
+
+   // Start channel 1
+   buf_i2s_ready = 0;
+   dma_channel_start(dma_i2s_ch1);
 }
 
 void analog_capture_free() {
@@ -95,6 +151,9 @@ void analog_capture_free() {
    analog_capture_stop();
 
    dma_channels_abort(dma_adc_ch1, dma_adc_ch2, DMA_IRQ_0);
+   dma_channels_abort(dma_i2s_ch1, dma_i2s_ch2, DMA_IRQ_1);
+
+   pio_sm_set_enabled(pio1, 3, false);
 
    adc_set_round_robin(0);
    adc_fifo_drain();
@@ -128,6 +187,22 @@ static void __not_in_flash_func(dma_adc_handler)() {
    }
 }
 
+static void __not_in_flash_func(dma_i2s_handler)() {
+   if (dma_channel_get_irq1_status(dma_i2s_ch1)) {
+
+      buf_i2s_ready = 0xFE; // lookup index: 0
+      buf_i2s_done_time_us = time_us_32();
+
+      dma_channel_acknowledge_irq1(dma_i2s_ch1);
+   } else if (dma_channel_get_irq1_status(dma_i2s_ch2)) {
+
+      buf_i2s_ready = 0xFF; // lookup index: 1
+      buf_i2s_done_time_us = time_us_32();
+
+      dma_channel_acknowledge_irq1(dma_i2s_ch2);
+   }
+}
+
 bool fetch_analog_buffer(analog_channel_t channel, uint16_t* samples, uint16_t** buffer, uint32_t* capture_end_time_us) {
    switch (channel) {
       case AUDIO_CHANNEL_LEFT:
@@ -155,6 +230,31 @@ bool fetch_analog_buffer(analog_channel_t channel, uint16_t* samples, uint16_t**
          *samples = ADC_SAMPLE_COUNT;
          return available;
       }
+      case AUDIO_CHANNEL_I2S_LEFT:
+      case AUDIO_CHANNEL_I2S_RIGHT: {
+         const uint8_t ready = buf_i2s_ready; // Local copy, since volatile
+
+         // Check if this channel has new or unprocessed buffer data available
+         const bool available = ready & (1 << channel);
+         if (available) {
+            const uint32_t* src = i2s_capture_buf[ready & 1]; // Source DMA buffer
+
+            const uint8_t offset = (channel == AUDIO_CHANNEL_I2S_LEFT ? 16 : 0);
+            for (uint x = 0; x < I2S_SAMPLE_COUNT; x++) {
+               int16_t v = (src[x] >> offset) & 0xFFFF;
+               printf("%d\n", v);
+               buffers[channel][x] = v;
+            }
+            i2s_end_time_us = buf_i2s_done_time_us; // Cache done time
+
+            buf_i2s_ready &= ~(1 << channel);       // Clear flag
+         }
+
+         *capture_end_time_us = i2s_end_time_us;
+         *buffer = buffers[channel];
+         *samples = I2S_SAMPLE_COUNT;
+         return available;
+      }
       default:
          *capture_end_time_us = 0;
          *buffer = NULL;
@@ -169,6 +269,9 @@ uint32_t get_capture_duration_us(analog_channel_t channel) {
       case AUDIO_CHANNEL_RIGHT:
       case AUDIO_CHANNEL_MIC:
          return adc_capture_duration_us;
+      case AUDIO_CHANNEL_I2S_RIGHT:
+      case AUDIO_CHANNEL_I2S_LEFT:
+         return i2s_capture_duration_us;
       default:
          return 1;
    }
