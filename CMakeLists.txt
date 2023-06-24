@@ -16,6 +16,7 @@ else() # configure as swx driver firmware using pico-sdk
 
     set(CMAKE_C_STANDARD 11)
     set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
     # Add the board directory so the pico-sdk can find it
     list(APPEND PICO_BOARD_HEADER_DIRS ${CMAKE_SOURCE_DIR}/boards)
