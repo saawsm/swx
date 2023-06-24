@@ -1,6 +1,10 @@
 #ifndef _STATE_H
 #define _STATE_H
 
+#include "swx.h"
+#include "message.h"
+
+#define READ_ONLY_ADDRESS_BOUNDARY (0x20)
 #define MAX_STATE_MEM_SIZE (256)
 
 static inline void set_state(uint8_t address, uint8_t value) {

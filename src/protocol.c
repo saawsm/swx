@@ -19,8 +19,11 @@ static void __not_in_flash_func(i2c_slave_handler)(i2c_inst_t* i2c, i2c_slave_ev
             ctx.address_written = true;
          } else {
             // save into memory
-            mem[ctx.address] = i2c_read_byte_raw(i2c);
-            ctx.address++;
+            const uint8_t value = i2c_read_byte_raw(i2c);
+            if (ctx.address >= READ_ONLY_ADDRESS_BOUNDARY) {
+               mem[ctx.address] = value;
+               ctx.address++;
+            }
          }
          break;
       case I2C_SLAVE_REQUEST: // master is requesting data
@@ -39,6 +42,12 @@ static void __not_in_flash_func(i2c_slave_handler)(i2c_inst_t* i2c, i2c_slave_ev
 void protocol_init() {
    // TODO: Currently no address bounds protection, so limit mem to one byte and use integer wrapping
    assert(MAX_STATE_MEM_SIZE == 256);
+   memset(mem, 0, MAX_STATE_MEM_SIZE);
+
+   // Set readonly info
+   set_state16(REG_VERSION, SWX_VERSION);
+   set_state(REG_CHANNEL_COUNT, CHANNEL_COUNT);
+   set_state(REG_CH_CAL_ENABLED, CH_CAL_ENABLED);
 
    LOG_DEBUG("Init protocol...\n");
    i2c_slave_init(I2C_PORT_COMMS, I2C_ADDRESS_COMMS, i2c_slave_handler);
