@@ -3,7 +3,7 @@
 
 #include <pico/i2c_slave.h>
 
-uint8_t mem[256];
+uint8_t mem[MAX_STATE_MEM_SIZE];
 
 static struct {
    uint8_t address;
@@ -37,6 +37,9 @@ static void __not_in_flash_func(i2c_slave_handler)(i2c_inst_t* i2c, i2c_slave_ev
 }
 
 void protocol_init() {
+   // TODO: Currently no address bounds protection, so limit mem to one byte and use integer wrapping
+   assert(MAX_STATE_MEM_SIZE == 256);
+
    LOG_DEBUG("Init protocol...\n");
    i2c_slave_init(I2C_PORT_COMMS, I2C_ADDRESS_COMMS, i2c_slave_handler);
 }
