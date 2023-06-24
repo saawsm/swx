@@ -86,7 +86,7 @@ void output_init() {
    queue_init(&power_queue, sizeof(pwr_cmd_t), 10);
 
    // Print I2C devices found on bus
-   i2c_scan(I2C_PORT); // TODO: Validate missing I2C devices
+   i2c_scan(I2C_PORT_PERIF); // TODO: Validate missing I2C devices
 
    for (uint8_t index = 0; index < CHANNEL_COUNT; index++)
       channel_init(&channels[index]);

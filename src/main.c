@@ -4,7 +4,6 @@
 
 #include <hardware/adc.h>
 #include <hardware/i2c.h>
-#include <hardware/spi.h>
 
 #include "output.h"
 #include "protocol.h"
@@ -40,34 +39,31 @@ static void init() {
    LOG_DEBUG("Init internal ADC...\n");
    adc_init();
 
+   // Setup I2C as master for comms with DAC (and optionally an ADC)
+#ifdef I2C_PORT_PERIF
+   LOG_DEBUG("Init peripheral I2C...\n");
+   i2c_init(I2C_PORT_PERIF, I2C_FREQ_PERIF);
+   gpio_set_function(PIN_I2C_SDA_PERIF, GPIO_FUNC_I2C);
+   gpio_set_function(PIN_I2C_SCL_PERIF, GPIO_FUNC_I2C);
+   gpio_pull_up(PIN_I2C_SDA_PERIF);
+   gpio_pull_up(PIN_I2C_SCL_PERIF);
+#endif
+
+   // Setup I2C as slave for comms with control device.
+   LOG_DEBUG("Init comms I2C...\n");
+   i2c_init(I2C_PORT_COMMS, I2C_FREQ_COMMS);
+   gpio_set_function(PIN_I2C_SDA_COMMS, GPIO_FUNC_I2C);
+   gpio_set_function(PIN_I2C_SCL_COMMS, GPIO_FUNC_I2C);
+   gpio_pull_up(PIN_I2C_SDA_COMMS);
+   gpio_pull_up(PIN_I2C_SCL_COMMS);
+   protocol_init();
+
    // Init external DAC and ADC
    extern void init_dac();
    init_dac();
 
    extern void init_adc();
    init_adc();
-
-   // Setup I2C as master for comms with DAC (and optionally an ADC)
-#ifdef I2C_PORT
-   LOG_DEBUG("Init I2C...\n");
-   i2c_init(I2C_PORT, I2C_FREQ);
-   gpio_set_function(PIN_I2C_SDA, GPIO_FUNC_I2C);
-   gpio_set_function(PIN_I2C_SCL, GPIO_FUNC_I2C);
-   gpio_pull_up(PIN_I2C_SDA);
-   gpio_pull_up(PIN_I2C_SCL);
-#endif
-
-   // Setup SPI as slave for comms with host device
-#ifdef SPI_PORT
-   LOG_DEBUG("Init SPI...\n");
-   spi_init(SPI_PORT, SPI_FREQ);
-   spi_set_format(SPI_PORT, 8, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
-   spi_set_slave(SPI_PORT, true);
-   gpio_set_function(PIN_SPI_MOSI, GPIO_FUNC_SPI);
-   gpio_set_function(PIN_SPI_SCK, GPIO_FUNC_SPI);
-   gpio_set_function(PIN_SPI_MISO, GPIO_FUNC_SPI);
-   gpio_set_function(PIN_SPI_CS, GPIO_FUNC_SPI);
-#endif
 }
 
 int main() {
@@ -89,17 +85,14 @@ int main() {
 
    LOG_DEBUG("Starting core0 loop...\n");
 
-   // Device ready. Generate fake received MSG_CMD_STATUS message, so we can reply
-   // instead of constructing the byte buffer manually.
-   // Note: Exclude SPI since SPI slaves cant start a transfer, instead assert interrupt pin.
-   parse_message(MSG_CH_UART | MSG_CH_STDIO, MSG_CMD_STATUS << MSG_CMD);
+   // Device ready. Assert interrupt pin, to notify control device.
    gpio_assert(PIN_INT);
 
    analog_capture_start();
 
    LOG_INFO("Ready.\n");
    while (true) {
-      protocol_process(MSG_CH_SPI | MSG_CH_UART | MSG_CH_STDIO);
+      protocol_process();
 
       pulse_gen_process();
       output_process_pulses();

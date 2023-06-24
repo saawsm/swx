@@ -12,14 +12,6 @@
 #define PIN_LDAC (4)
 #define PIN_INT (5)
 
-#define PIN_I2C_SDA (2)
-#define PIN_I2C_SCL (3)
-
-#define PIN_SPI_SCK (18)
-#define PIN_SPI_MOSI (16)
-#define PIN_SPI_MISO (19)
-#define PIN_SPI_CS (17)
-
 #define PIN_AUDIO_MIC (26)
 #define PIN_AUDIO_LEFT (27)
 #define PIN_AUDIO_RIGHT (28)
@@ -28,13 +20,22 @@
 #define PIN_I2S_WS (21)
 #define PIN_I2S_SD (22)
 
-// -------- SPI --------
-#define SPI_PORT (spi0)
-#define SPI_FREQ (1000000)
-
 // -------- I2C --------
-#define I2C_PORT (i2c1)
-#define I2C_FREQ (400000)
+
+// Port used for communications with controller (I2C slave mode).
+#define I2C_PORT_COMMS (i2c0)
+#define I2C_FREQ_COMMS (100000)
+#define I2C_ADDRESS_COMMS (0x17)
+
+#define PIN_I2C_SDA_COMMS (0)
+#define PIN_I2C_SCL_COMMS (1)
+
+// Port used for DAC and any other peripheral devices (I2C master mode).
+#define I2C_PORT_PERIF (i2c1)
+#define I2C_FREQ_PERIF (400000)
+
+#define PIN_I2C_SDA_PERIF (2)
+#define PIN_I2C_SCL_PERIF (3)
 
 // -------- I2C Devices --------
 #define USE_ADC_ADS1015 // Use I2C ADC for feedback

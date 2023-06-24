@@ -62,12 +62,12 @@ else() # configure as swx driver firmware using pico-sdk
     # Link libraries
     target_link_libraries(${PROJECT_NAME}
         PRIVATE
-            hardware_spi
             hardware_i2c
             hardware_pio
             hardware_adc
             hardware_dma
             pico_multicore
+            pico_i2c_slave
     )
 
     target_compile_options(${PROJECT_NAME} PRIVATE
@@ -81,7 +81,7 @@ else() # configure as swx driver firmware using pico-sdk
 
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         pico_enable_stdio_usb(${PROJECT_NAME} 1)
-        # pico_enable_stdio_uart(${PROJECT_NAME} 1)
+        pico_enable_stdio_uart(${PROJECT_NAME} 1)
     endif()
 
     # pico_set_float_implementation(${PROJECT_NAME} pico)
