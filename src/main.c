@@ -63,6 +63,9 @@ static void init() {
 
    extern void init_adc();
    init_adc();
+
+   analog_capture_init();
+   analog_capture_start();
 }
 
 int main() {
@@ -82,15 +85,10 @@ int main() {
 
    pulse_gen_init();
 
-   analog_capture_init();
-
    LOG_DEBUG("Starting core0 loop...\n");
 
    // Device ready. Assert interrupt pin, to notify control device.
    gpio_assert(PIN_INT);
-
-   analog_capture_start();
-
    LOG_INFO("Ready.\n");
    while (true) {
       protocol_process();
