@@ -27,6 +27,51 @@
 #warning "Channel calibration errors are ignored! Output modules could overload!"
 #endif
 
+#ifdef CH_CAL_THRESHOLD_OK
+#ifndef CH1_CAL_THRESHOLD_OK
+#define CH1_CAL_THRESHOLD_OK (CH_CAL_THRESHOLD_OK)
+#endif
+#ifndef CH2_CAL_THRESHOLD_OK
+#define CH2_CAL_THRESHOLD_OK (CH_CAL_THRESHOLD_OK)
+#endif
+#ifndef CH3_CAL_THRESHOLD_OK
+#define CH3_CAL_THRESHOLD_OK (CH_CAL_THRESHOLD_OK)
+#endif
+#ifndef CH4_CAL_THRESHOLD_OK
+#define CH4_CAL_THRESHOLD_OK (CH_CAL_THRESHOLD_OK)
+#endif
+#endif
+
+#ifdef CH_CAL_THRESHOLD_OVER
+#ifndef CH1_CAL_THRESHOLD_OVER
+#define CH1_CAL_THRESHOLD_OVER (CH_CAL_THRESHOLD_OVER)
+#endif
+#ifndef CH2_CAL_THRESHOLD_OVER
+#define CH2_CAL_THRESHOLD_OVER (CH_CAL_THRESHOLD_OVER)
+#endif
+#ifndef CH3_CAL_THRESHOLD_OVER
+#define CH3_CAL_THRESHOLD_OVER (CH_CAL_THRESHOLD_OVER)
+#endif
+#ifndef CH4_CAL_THRESHOLD_OVER
+#define CH4_CAL_THRESHOLD_OVER (CH_CAL_THRESHOLD_OVER)
+#endif
+#endif
+
+#ifdef CH_CAL_OFFSET
+#ifndef CH1_CAL_OFFSET
+#define CH1_CAL_OFFSET (CH_CAL_OFFSET)
+#endif
+#ifndef CH2_CAL_OFFSET
+#define CH2_CAL_OFFSET (CH_CAL_OFFSET)
+#endif
+#ifndef CH3_CAL_OFFSET
+#define CH3_CAL_OFFSET (CH_CAL_OFFSET)
+#endif
+#ifndef CH4_CAL_OFFSET
+#define CH4_CAL_OFFSET (CH_CAL_OFFSET)
+#endif
+#endif
+
 #define CH(pinGateA, pinGateB, dacChannel, adcChannel, pio_hw, sm_index, calThresholdOk, calThresholdOver, calOffset)                                                    \
    {                                                                                                                                                                     \
       .pin_gate_a = (pinGateA), .pin_gate_b = (pinGateB), .dac_channel = (dacChannel), .adc_channel = (adcChannel), .pio = (pio_hw), .sm = (sm_index),                   \
