@@ -21,6 +21,8 @@ extern void audio_process(channel_data_t* ch, uint8_t ch_index, uint16_t power);
 static inline void parameter_step(uint8_t ch_index, param_t param);
 
 void pulse_gen_process() {
+   const uint8_t en = get_state(REG_CH_GEN_ENABLE);
+
    for (uint8_t ch_index = 0; ch_index < CHANNEL_COUNT; ch_index++) {
       channel_data_t* ch = &channels[ch_index];
 
@@ -28,7 +30,7 @@ void pulse_gen_process() {
       for (uint8_t i = 0; i < TOTAL_PARAMS; i++)
          parameter_step(ch_index, i);
 
-      if (!get_state(REG_CHn_GEN_ENABLE + ch_index) && ch->state_index == 0) // when disabled, wait until off state
+      if ((en & (1 << ch_index)) && ch->state_index == 0) // when disabled, wait until off state
          continue;
 
       uint32_t time = time_us_32();

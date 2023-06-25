@@ -24,19 +24,23 @@
 
 #define REG_PSU_STATE (32) // PSU enable state
 
-#define REG_CHn_GEN_ENABLE (33) // Channel pulse_gen enabled TODO: Use mask
-#define REG_CH1_GEN_ENABLE (REG_CHn_GEN_ENABLE + 0)
-#define REG_CH2_GEN_ENABLE (REG_CHn_GEN_ENABLE + 1)
-#define REG_CH3_GEN_ENABLE (REG_CHn_GEN_ENABLE + 2)
-#define REG_CH4_GEN_ENABLE (REG_CHn_GEN_ENABLE + 3)
+#define REG_CH_GEN_ENABLE (33) // Channel pulse_gen enabled
+#define REG_CH1_GEN_ENABLE_BIT (0)
+#define REG_CH1_GEN_ENABLE_MASK (1 << REG_CH1_GEN_ENABLE_BIT)
+#define REG_CH2_GEN_ENABLE_BIT (1)
+#define REG_CH2_GEN_ENABLE_MASK (1 << REG_CH2_GEN_ENABLE_BIT)
+#define REG_CH3_GEN_ENABLE_BIT (2)
+#define REG_CH3_GEN_ENABLE_MASK (1 << REG_CH3_GEN_ENABLE_BIT)
+#define REG_CH4_GEN_ENABLE_BIT (3)
+#define REG_CH4_GEN_ENABLE_MASK (1 << REG_CH4_GEN_ENABLE_BIT)
 
-#define REG_CHnn_POWER (38) // uint16_t channel power level (scaled with PARAM_POWER)
+#define REG_CHnn_POWER (34) // uint16_t channel power level (scaled with PARAM_POWER)
 #define REG_CH1_POWER (REG_CHnn_POWER + 0)
 #define REG_CH2_POWER (REG_CHnn_POWER + 2)
 #define REG_CH3_POWER (REG_CHnn_POWER + 4)
 #define REG_CH4_POWER (REG_CHnn_POWER + 6)
 
-#define REG_CHn_AUDIO_SRC (46) // Channel audio source, override default pulse_gen. see analog_channel_t
+#define REG_CHn_AUDIO_SRC (42) // Channel audio source, override default pulse_gen. see analog_channel_t
 #define REG_CH1_AUDIO_SRC (REG_CHn_AUDIO_SRC + 0)
 #define REG_CH2_AUDIO_SRC (REG_CHn_AUDIO_SRC + 1)
 #define REG_CH3_AUDIO_SRC (REG_CHn_AUDIO_SRC + 2)
