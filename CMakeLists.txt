@@ -43,7 +43,6 @@ else() # configure as swx driver firmware using pico-sdk
         PRIVATE
             "src/main.c"
             "src/output.c"
-            "src/channel.c"
             "src/pulse_gen.c"
             "src/protocol.c"
             "src/audio.c"

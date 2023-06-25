@@ -84,8 +84,6 @@ extern bool set_dac_direct(uint8_t channel, uint16_t value);
 extern float adc_compute_volts(uint16_t counts);
 extern bool adc_read_counts(uint8_t channel, uint16_t* counts);
 
-static float read_voltage(channel_def_t* ch);
-
 typedef struct {
    uint8_t channel;
    uint16_t power;
@@ -114,6 +112,8 @@ typedef struct {
    const float cal_threshold_over; // Over voltage threshold for calibration
    const uint16_t cal_offset;      // Calibration offset
 } channel_def_t;
+
+static float read_voltage(const channel_def_t* ch);
 
 static const channel_def_t channels[CHANNEL_COUNT] = {
     CH(PIN_CH1_GA, PIN_CH1_GB, CH1_DAC_CHANNEL, CH1_ADC_CHANNEL, pio0, 0, CH1_CAL_THRESHOLD_OK, CH1_CAL_THRESHOLD_OVER, CH1_CAL_OFFSET),
@@ -391,9 +391,9 @@ void output_process_power() {
    }
 }
 
-bool output_pulse(uint8_t index, uint16_t pos_us, uint16_t neg_us, uint32_t abs_time_us) {
+bool output_pulse(uint8_t ch_index, uint16_t pos_us, uint16_t neg_us, uint32_t abs_time_us) {
    pulse_t pulse = {
-       .channel = index,
+       .channel = ch_index,
        .pos_us = pos_us,
        .neg_us = neg_us,
        .abs_time_us = abs_time_us,
@@ -401,26 +401,26 @@ bool output_pulse(uint8_t index, uint16_t pos_us, uint16_t neg_us, uint32_t abs_
    return queue_try_add(&pulse_queue, &pulse);
 }
 
-void output_set_power(uint8_t index, uint16_t power) {
-   pwr_cmd_t cmd = {.channel = index, .power = power};
+void output_set_power(uint8_t ch_index, uint16_t power) {
+   pwr_cmd_t cmd = {.channel = ch_index, .power = power};
    queue_try_add(&power_queue, &cmd);
 }
 
 static int64_t disable_gen_alarm_cb(alarm_id_t id, void* user_data) {
    (void)id;
    if (user_data)
-      set_state(REG_CHn_GEN_ENABLE + (uint8_t)user_data, false);
+      set_state(REG_CHn_GEN_ENABLE + ((uint8_t)(int)user_data), false);
    return 0;
 }
 
-void output_set_gen_enabled(uint8_t index, bool enabled, uint16_t turn_off_delay_ms) {
-   if ((bool)get_state(REG_CHn_GEN_ENABLE + index) == enabled)
+void output_set_gen_enabled(uint8_t ch_index, bool enabled, uint16_t turn_off_delay_ms) {
+   if ((bool)get_state(REG_CHn_GEN_ENABLE + ch_index) == enabled)
       return;
 
    if (!enabled && turn_off_delay_ms > 0) { // attempting to disable
-      add_alarm_in_ms(turn_off_delay_ms, disable_gen_alarm_cb, (void*)index, true);
+      add_alarm_in_ms(turn_off_delay_ms, disable_gen_alarm_cb, (void*)((int)ch_index), true);
    } else {
-      set_state(REG_CHn_GEN_ENABLE + index, enabled);
+      set_state(REG_CHn_GEN_ENABLE + ch_index, enabled);
    }
 }
 
@@ -455,7 +455,7 @@ static int cmpfunc(const void* a, const void* b) {
 }
 #endif
 
-static float read_voltage(channel_def_t* ch) {
+static float read_voltage(const channel_def_t* ch) {
 #ifdef USE_ADC_MEAN
    uint16_t readings[ADC_MEAN];
 

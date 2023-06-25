@@ -1,11 +1,14 @@
 #include "swx.h"
 #include <stdlib.h>
 
+#include "pulse_gen.h"
+
 #include "analog_capture.h"
 #include "output.h"
 
-static void process_samples(channel_t* ch, uint8_t channel, uint16_t sample_count, uint16_t* buffer, float* out_intensity, uint32_t capture_end_time_us);
-static void process_sample(channel_t* ch, uint8_t channel, uint32_t time_us, int32_t value);
+static inline void process_samples(channel_data_t* ch, uint8_t ch_index, analog_channel_t audio_src, uint16_t sample_count, uint16_t* buffer, float* out_intensity,
+                                   uint32_t capture_end_time_us);
+static void process_sample(channel_data_t* ch, uint8_t ch_index, uint32_t time_us, int32_t value);
 
 static int32_t last_sample_values[CHANNEL_COUNT] = {0};
 static uint32_t last_process_times_us[CHANNEL_COUNT] = {0};
@@ -22,40 +25,42 @@ static uint32_t last_process_times_us[CHANNEL_COUNT] = {0};
  * - We know fairly accurately when the capture finished, and how long it was. So we can use that information to
  *   schedule pulses +16ms in the future. The downside is that this introduces ~16ms of latency.
  */
-void audio_process(channel_t* ch, uint8_t channel, uint16_t power) {
+void audio_process(channel_data_t* ch, uint8_t ch_index, uint16_t power) {
    uint16_t sample_count;
    uint16_t* sample_buffer;
    uint32_t capture_end_time_us = 0;
 
    // Fetch audio from the specific analog channel
-   fetch_analog_buffer(ch->audio_src, &sample_count, &sample_buffer, &capture_end_time_us);
+   const analog_channel_t audio_src = get_state(REG_CHn_AUDIO_SRC + ch_index);
+   fetch_analog_buffer(audio_src, &sample_count, &sample_buffer, &capture_end_time_us);
 
    // Skip processing if audio samples are older than previously processed
-   if (capture_end_time_us <= last_process_times_us[channel])
+   if (capture_end_time_us <= last_process_times_us[ch_index])
       return;
-   last_process_times_us[channel] = capture_end_time_us;
+   last_process_times_us[ch_index] = capture_end_time_us;
 
    // Process audio samples by converting them into pulses and calculating intensity to scale power level
    float intensity;
-   process_samples(ch, channel, sample_count, sample_buffer, &intensity, capture_end_time_us);
+   process_samples(ch, ch_index, audio_src, sample_count, sample_buffer, &intensity, capture_end_time_us);
 
    // Set channel output power, limit updates to ~2.2 kHz since it takes the DAC about ~110us/ch
    uint32_t time = time_us_32();
    if (time - ch->last_power_time_us > 110 * CHANNEL_COUNT) {
       ch->last_power_time_us = time;
 
-      const uint16_t power_max = ch->parameters[PARAM_POWER].values[TARGET_MAX];
+      const uint16_t power_max = GET_VALUE(ch_index, PARAM_POWER, TARGET_MAX);
 
       // scale power level with audio intensity, ensure power is between min-max
       power *= intensity;
       if (power > power_max)
          power = power_max;
 
-      output_set_power(channel, power);
+      output_set_power(ch_index, power);
    }
 }
 
-static void process_samples(channel_t* ch, uint8_t channel, uint16_t sample_count, uint16_t* buffer, float* out_intensity, uint32_t capture_end_time_us) {
+static inline void process_samples(channel_data_t* ch, uint8_t ch_index, analog_channel_t audio_src, uint16_t sample_count, uint16_t* buffer, float* out_intensity,
+                                   uint32_t capture_end_time_us) {
    // Find the min, max, and mean sample values
    uint32_t min = UINT32_MAX;
    uint32_t max = 0;
@@ -73,14 +78,14 @@ static void process_samples(channel_t* ch, uint8_t channel, uint16_t sample_coun
    const uint16_t avg = total / sample_count;
 
    // Noise filter
-   if (abs(min - avg) < 7 && abs(max - avg) < 7) {
+   if (abs((int32_t)min - avg) < 7 && abs((int32_t)max - avg) < 7) {
       *out_intensity = 0;
       return;
    }
 
    *out_intensity = (max - min) / 255.0f;                                            // crude approximation of volume
 
-   const uint32_t capture_duration_us = get_capture_duration_us(ch->audio_src);      // buffer capture duration
+   const uint32_t capture_duration_us = get_capture_duration_us(audio_src);          // buffer capture duration
    const uint32_t capture_start_time_us = capture_end_time_us - capture_duration_us; // time when capture started
 
    const uint32_t sample_duration_us = capture_duration_us / sample_count;           // single sample duration
@@ -90,26 +95,26 @@ static void process_samples(channel_t* ch, uint8_t channel, uint16_t sample_coun
       const uint32_t sample_time_us = capture_start_time_us + (sample_duration_us * i);
       const int32_t value = avg - buffer[i];
 
-      process_sample(ch, channel, sample_time_us, value);
+      process_sample(ch, ch_index, sample_time_us, value);
    }
 }
 
-static inline void process_sample(channel_t* ch, uint8_t channel, uint32_t time_us, int32_t value) {
+static inline void process_sample(channel_data_t* ch, uint8_t ch_index, uint32_t time_us, int32_t value) {
    // Check for zero crossing
-   if (((value > 0 && last_sample_values[channel] <= 0) || (value < 0 && last_sample_values[channel] >= 0))) {
+   if (((value > 0 && last_sample_values[ch_index] <= 0) || (value < 0 && last_sample_values[ch_index] >= 0))) {
 
-      uint32_t min_period = 10000000ul / ch->parameters[PARAM_FREQUENCY].values[TARGET_MAX]; // dHz -> us
-      if (min_period < 2000)                                                                 // clamp to 500 Hz
+      uint32_t min_period = 10000000ul / GET_VALUE(ch_index, PARAM_FREQUENCY, TARGET_MAX); // dHz -> us
+      if (min_period < 2000)                                                               // clamp to 500 Hz
          min_period = 2000;
 
       if (time_us - ch->last_pulse_time_us >= min_period) { // limit pulses to parameter frequency maximum or 500 Hz, whatever is lower
          ch->last_pulse_time_us = time_us;
 
-         const uint16_t pulse_width = ch->parameters[PARAM_PULSE_WIDTH].values[TARGET_VALUE];
+         const uint16_t pulse_width = GET_VALUE(ch_index, PARAM_PULSE_WIDTH, TARGET_VALUE);
 
-         output_pulse(channel, pulse_width, pulse_width, time_us + 20000); // 20 ms in future
+         output_pulse(ch_index, pulse_width, pulse_width, time_us + 20000); // 20 ms in future
       }
    }
 
-   last_sample_values[channel] = value;
+   last_sample_values[ch_index] = value;
 }

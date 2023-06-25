@@ -17,7 +17,7 @@ static struct {
          ctx.address = 0;                                                                                                                                                \
    } while (0)
 
-__not_in_flash_func(i2c_slave_handler)(i2c_inst_t* i2c, i2c_slave_event_t event) {
+static void __not_in_flash_func(i2c_slave_handler)(i2c_inst_t* i2c, i2c_slave_event_t event) {
    switch (event) {
       case I2C_SLAVE_RECEIVE: // master has written some data
          if (ctx.ready < 2) {

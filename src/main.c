@@ -8,6 +8,7 @@
 #include "output.h"
 #include "protocol.h"
 #include "analog_capture.h"
+#include "pulse_gen.h"
 
 #include "util/i2c.h"
 #include "util/gpio.h"
@@ -15,8 +16,6 @@
 void core1_entry();
 
 bool blink_led_timer_cb(repeating_timer_t* rt);
-
-extern void pulse_gen_process();
 
 repeating_timer_t failure_timer;
 
