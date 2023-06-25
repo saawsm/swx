@@ -1,9 +1,12 @@
 #include "protocol.h"
 #include "state.h"
 
+#include "output.h"
+
 #include <pico/i2c_slave.h>
 
 uint8_t mem[MAX_STATE_MEM_SIZE];
+static volatile bool dirty = false;
 
 static struct {
    uint16_t address;
@@ -45,6 +48,7 @@ static void __not_in_flash_func(i2c_slave_handler)(i2c_inst_t* i2c, i2c_slave_ev
          break;
       case I2C_SLAVE_FINISH: // master has signalled Stop / Restart
          ctx.ready = 0;
+         dirty = true;
          break;
       default:
          break;
@@ -67,4 +71,14 @@ void protocol_free() {
    i2c_slave_deinit(I2C_PORT_COMMS);
 }
 
-void protocol_process() {}
+void protocol_process() {
+   if (!dirty) // master has signalled Stop / Restart
+      return;
+   dirty = false;
+
+   // update hardware PSU state
+   set_psu_enabled(get_state(REG_PSU_ENABLE));
+   set_state(REG_PSU_STATE, is_psu_enabled());
+
+   
+}

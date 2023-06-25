@@ -20,9 +20,11 @@
 #define REG_CH3_STATUS (REG_CHn_STATUS + 2)
 #define REG_CH4_STATUS (REG_CHn_STATUS + 3)
 
+#define REG_PSU_STATE (19) // PSU enabled state (readonly)
+
 // -----------------------------------------------------
 
-#define REG_PSU_STATE (32) // PSU enable state
+#define REG_PSU_ENABLE (32)    // Enable/disable PSU
 
 #define REG_CH_GEN_ENABLE (33) // Channel pulse_gen enabled
 #define REG_CH1_GEN_ENABLE_BIT (0)
