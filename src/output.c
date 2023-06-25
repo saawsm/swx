@@ -406,24 +406,6 @@ void output_set_power(uint8_t ch_index, uint16_t power) {
    queue_try_add(&power_queue, &cmd);
 }
 
-static int64_t disable_gen_alarm_cb(alarm_id_t id, void* user_data) {
-   (void)id;
-   if (user_data)
-      set_state(REG_CHn_GEN_ENABLE + ((uint8_t)(int)user_data), false);
-   return 0;
-}
-
-void output_set_gen_enabled(uint8_t ch_index, bool enabled, uint16_t turn_off_delay_ms) {
-   if ((bool)get_state(REG_CHn_GEN_ENABLE + ch_index) == enabled)
-      return;
-
-   if (!enabled && turn_off_delay_ms > 0) { // attempting to disable
-      add_alarm_in_ms(turn_off_delay_ms, disable_gen_alarm_cb, (void*)((int)ch_index), true);
-   } else {
-      set_state(REG_CHn_GEN_ENABLE + ch_index, enabled);
-   }
-}
-
 void set_psu_enabled(bool enabled) {
 #ifdef PIN_REG_EN
    const bool oldState = is_psu_enabled();

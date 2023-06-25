@@ -24,8 +24,6 @@ void output_process_power();
 bool output_pulse(uint8_t index, uint16_t pos_us, uint16_t neg_us, uint32_t abs_time_us);
 void output_set_power(uint8_t index, uint16_t power);
 
-void output_set_gen_enabled(uint8_t index, bool enabled, uint16_t turn_off_delay_ms);
-
 void set_psu_enabled(bool enabled);
 bool is_psu_enabled();
 
