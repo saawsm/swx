@@ -26,7 +26,7 @@ void pulse_gen_init() {
    // Set default parameter values
    for (uint8_t ch_index = 0; ch_index < CHANNEL_COUNT; ch_index++) {
       channels[ch_index].state_index = 0;
-      
+
       SET_VALUE(ch_index, PARAM_POWER, TARGET_MAX, 1000);         // 100%
       SET_VALUE(ch_index, PARAM_POWER, TARGET_VALUE, 1000);       // 100%
 
@@ -188,7 +188,8 @@ static inline void parameter_step(uint8_t ch_index, param_t param) {
 
    // if the notify bit is set, update flags and assert notify pin
    if (notify) {
-      p->flags |= (1 << mode);
+      const uint16_t address = REG_CHnn_PARAM_FLAGS + (ch_index * 2);
+      set_state16(address, get_state16(address) | (1 << param));
       gpio_assert(PIN_INT);
    }
 }

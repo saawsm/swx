@@ -13,9 +13,6 @@ typedef struct {
 
    uint32_t next_update_time_us;
    uint32_t update_period_us;
-
-   // Status flags for when the param value has reached an extent (min/max). Flag bits should be reset when acknowledged.
-   uint8_t flags;
 } parameter_data_t;
 
 typedef struct {

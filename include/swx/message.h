@@ -8,19 +8,19 @@
 #define REG_CHANNEL_COUNT (2)           // Number of channels (readonly)
 #define REG_CH_CAL_ENABLED (3)          // (readonly)
 
-#define REG_CHnn_CAL_VALUE (8)          // uint16_t channel cal value (readonly)
-#define REG_CH1_CAL_VALUE (REG_CHnn_CAL_VALUE + 0)
-#define REG_CH2_CAL_VALUE (REG_CHnn_CAL_VALUE + 2)
-#define REG_CH3_CAL_VALUE (REG_CHnn_CAL_VALUE + 4)
-#define REG_CH4_CAL_VALUE (REG_CHnn_CAL_VALUE + 6)
+#define REG_PSU_STATE (4)               // PSU enabled state (readonly)
 
-#define REG_CHn_STATUS (15) // channel_status_t (readonly)
+#define REG_CHn_STATUS (5)              // channel_status_t (readonly)
 #define REG_CH1_STATUS (REG_CHn_STATUS + 0)
 #define REG_CH2_STATUS (REG_CHn_STATUS + 1)
 #define REG_CH3_STATUS (REG_CHn_STATUS + 2)
 #define REG_CH4_STATUS (REG_CHn_STATUS + 3)
 
-#define REG_PSU_STATE (19) // PSU enabled state (readonly)
+#define REG_CHnn_CAL_VALUE (9) // uint16_t channel cal value (readonly)
+#define REG_CH1_CAL_VALUE (REG_CHnn_CAL_VALUE + 0)
+#define REG_CH2_CAL_VALUE (REG_CHnn_CAL_VALUE + 2)
+#define REG_CH3_CAL_VALUE (REG_CHnn_CAL_VALUE + 4)
+#define REG_CH4_CAL_VALUE (REG_CHnn_CAL_VALUE + 6)
 
 // -----------------------------------------------------
 
@@ -42,12 +42,19 @@
 #define REG_CH3_POWER (REG_CHnn_POWER + 4)
 #define REG_CH4_POWER (REG_CHnn_POWER + 6)
 
-#define REG_CHn_AUDIO_SRC (42) // Channel audio source, override default pulse_gen. see analog_channel_t
+// Status flags for when the param value has reached an extent (min/max). Flag bits should be reset when acknowledged.
+#define REG_CHnn_PARAM_FLAGS (50)
+#define REG_CH1_PARAM_FLAGS (REG_CHnn_PARAM_FLAGS + 0)
+#define REG_CH2_PARAM_FLAGS (REG_CHnn_PARAM_FLAGS + 2)
+#define REG_CH3_PARAM_FLAGS (REG_CHnn_PARAM_FLAGS + 4)
+#define REG_CH4_PARAM_FLAGS (REG_CHnn_PARAM_FLAGS + 6)
+
+#define REG_CHn_AUDIO_SRC (66) // Channel audio source, override default pulse_gen. see analog_channel_t
 #define REG_CH1_AUDIO_SRC (REG_CHn_AUDIO_SRC + 0)
 #define REG_CH2_AUDIO_SRC (REG_CHn_AUDIO_SRC + 1)
 #define REG_CH3_AUDIO_SRC (REG_CHn_AUDIO_SRC + 2)
 #define REG_CH4_AUDIO_SRC (REG_CHn_AUDIO_SRC + 3)
 
-#define REG_CHnn_PARAM (152) // Channel pulse generation parameters. see PARAM_TARGET_INDEX() for required offsets
+#define REG_CHnn_PARAM (128) // Channel pulse generation parameters. see PARAM_TARGET_INDEX() for required offsets
 
 #endif                       // _MESSAGE_H
