@@ -2,6 +2,7 @@
 #include "state.h"
 
 #include "output.h"
+#include "pulse_gen.h"
 
 #include <pico/i2c_slave.h>
 
@@ -80,5 +81,28 @@ void protocol_process() {
    set_psu_enabled(get_state(REG_PSU_ENABLE));
    set_state(REG_PSU_STATE, is_psu_enabled());
 
-   
+   // run requested cmd
+   const uint8_t state = get_state(REG_CMD);
+   if (state) {
+      set_state(REG_CMD, 0);
+
+      const uint8_t ch_index = (state & REG_CMD_CH_MASK) >> REG_CMD_CH_BIT;
+
+      switch ((state & REG_CMD_ACTION_MASK) >> REG_CMD_ACTION_BIT) {
+         case CMD_PULSE:
+            const uint16_t pw_us = get_state16(REG_CMD + 1);
+            output_pulse(ch_index, pw_us, pw_us, time_us_32());
+            break;
+         case CMD_SET_POWER:
+            const uint16_t power = get_state16(REG_CMD + 1);
+            output_set_power(ch_index, power);
+            break;
+         case CMD_PARAM_UPDATE:
+            const param_t param = get_state(REG_CMD + 1);
+            parameter_update(ch_index, param);
+            break;
+         default:
+            break;
+      }
+   }
 }

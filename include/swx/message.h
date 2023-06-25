@@ -55,6 +55,23 @@
 #define REG_CH3_AUDIO_SRC (REG_CHn_AUDIO_SRC + 2)
 #define REG_CH4_AUDIO_SRC (REG_CHn_AUDIO_SRC + 3)
 
+// CMD register, clears on execute. CMD id in upper nibble, channel index in lower nibble.
+#define REG_CMD (82)
+#define REG_CMD_CH (15)
+#define REG_CMD_CH_BIT (0)
+#define REG_CMD_CH_MASK (REG_CMD_CH << REG_CMD_CH_BIT)
+#define REG_CMD_ACTION (15)
+#define REG_CMD_ACTION_BIT (4)
+#define REG_CMD_ACTION_MASK (REG_CMD_ACTION << REG_CMD_ACTION_BIT)
+
+#define CMD_PULSE (1)        // arg: pulse_width (uint16_t)
+#define CMD_SET_POWER (2)    // arg: power level (uint16_t)
+#define CMD_PARAM_UPDATE (3) // arg: param (param_t, uint8_t)
+#define CMD_CH1 (0)
+#define CMD_CH2 (1)
+#define CMD_CH3 (2)
+#define CMD_CH4 (3)
+
 #define REG_CHnn_PARAM (128) // Channel pulse generation parameters. see PARAM_TARGET_INDEX() for required offsets
 
 #endif                       // _MESSAGE_H
