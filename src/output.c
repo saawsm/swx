@@ -242,8 +242,8 @@ bool output_calibrate_all() {
          continue;
       }
 
-      const uint8_t ch_status = REG_CHn_STATUS + ch_index;
-      const uint8_t ch_cal_value = REG_CHnn_CAL_VALUE + (ch_index * 2);
+      const uint16_t ch_status = REG_CHn_STATUS + ch_index;
+      const uint16_t ch_cal_value = REG_CHnn_CAL_VALUE + (ch_index * 2);
 
       if (get_state(ch_status) == CHANNEL_INVALID) { // This should not happen...
          success = false;
