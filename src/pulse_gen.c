@@ -20,6 +20,29 @@ extern void audio_process(channel_data_t* ch, uint8_t ch_index, uint16_t power);
 
 static inline void parameter_step(uint8_t ch_index, param_t param);
 
+void pulse_gen_init() {
+   LOG_DEBUG("Init pulse generator...\n");
+
+   // Set default parameter values
+   for (uint8_t ch_index = 0; ch_index < CHANNEL_COUNT; ch_index++) {
+      channels[ch_index].state_index = 0;
+      
+      SET_VALUE(ch_index, PARAM_POWER, TARGET_MAX, 1000);         // 100%
+      SET_VALUE(ch_index, PARAM_POWER, TARGET_VALUE, 1000);       // 100%
+
+      SET_VALUE(ch_index, PARAM_FREQUENCY, TARGET_MAX, 5000);     // max. 500 Hz (soft limit - only auto cycling)
+      SET_VALUE(ch_index, PARAM_FREQUENCY, TARGET_VALUE, 1800);   // 180 Hz
+
+      SET_VALUE(ch_index, PARAM_PULSE_WIDTH, TARGET_MAX, 500);    // max. 500 us
+      SET_VALUE(ch_index, PARAM_PULSE_WIDTH, TARGET_VALUE, 150);  // 150 us
+
+      SET_VALUE(ch_index, PARAM_ON_TIME, TARGET_MAX, 10000);      // 10 seconds
+      SET_VALUE(ch_index, PARAM_ON_RAMP_TIME, TARGET_MAX, 5000);  // 5 seconds
+      SET_VALUE(ch_index, PARAM_OFF_TIME, TARGET_MAX, 10000);     // 10 seconds
+      SET_VALUE(ch_index, PARAM_OFF_RAMP_TIME, TARGET_MAX, 5000); // 5 seconds
+   }
+}
+
 void pulse_gen_process() {
    const uint8_t en = get_state(REG_CH_GEN_ENABLE);
 

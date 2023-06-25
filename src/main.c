@@ -80,6 +80,8 @@ int main() {
    multicore_reset_core1();
    multicore_launch_core1(core1_entry);
 
+   pulse_gen_init();
+
    analog_capture_init();
 
    LOG_DEBUG("Starting core0 loop...\n");

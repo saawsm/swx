@@ -30,6 +30,8 @@ typedef struct {
    parameter_data_t parameters[TOTAL_PARAMS];
 } channel_data_t;
 
+void pulse_gen_init();
+
 void pulse_gen_process();
 
 void parameter_update(uint8_t ch_index, param_t param);
