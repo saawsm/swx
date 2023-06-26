@@ -1,6 +1,9 @@
 #ifndef _MESSAGE_H
 #define _MESSAGE_H
 
+#define READ_ONLY_ADDRESS_BOUNDARY (0x20)
+#define MAX_STATE_MEM_SIZE (0x350)
+
 #define REG_VERSION (0)                 // bytes 0 & 1 (readonly)
 #define REG_VERSION_L (REG_VERSION)     // (readonly)
 #define REG_VERSION_H (REG_VERSION + 1) // (readonly)

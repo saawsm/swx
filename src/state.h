@@ -4,12 +4,9 @@
 #include "swx.h"
 #include "message.h"
 
-#define READ_ONLY_ADDRESS_BOUNDARY (0x20)
-#define MAX_STATE_MEM_SIZE (512)
-
 static inline void set_state(uint16_t address, uint8_t value) {
    extern uint8_t mem[MAX_STATE_MEM_SIZE];
-   mem[address] = value;
+   mem[address] = value; 
 }
 
 static inline void set_state16(uint16_t address, uint16_t value) {
