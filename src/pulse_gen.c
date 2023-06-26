@@ -53,7 +53,7 @@ void pulse_gen_process() {
       for (uint8_t i = 0; i < TOTAL_PARAMS; i++)
          parameter_step(ch_index, i);
 
-      if ((en & (1 << ch_index)) && ch->state_index == 0) // when disabled, wait until off state
+      if (!(en & (1 << ch_index)) && ch->state_index == 0) // when disabled, wait until off state
          continue;
 
       uint32_t time = time_us_32();
