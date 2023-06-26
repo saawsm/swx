@@ -88,19 +88,17 @@ void protocol_process() {
       set_state(REG_CMD, 0);
 
       const uint8_t ch_index = (state & REG_CMD_CH_MASK) >> REG_CMD_CH_BIT;
+      const uint16_t arg0 = get_state16(REG_CMD + 1);
 
       switch ((state & REG_CMD_ACTION_MASK) >> REG_CMD_ACTION_BIT) {
          case CMD_PULSE:
-            const uint16_t pw_us = get_state16(REG_CMD + 1);
-            output_pulse(ch_index, pw_us, pw_us, time_us_32());
+            output_pulse(ch_index, arg0, arg0, time_us_32());
             break;
          case CMD_SET_POWER:
-            const uint16_t power = get_state16(REG_CMD + 1);
-            output_set_power(ch_index, power);
+            output_set_power(ch_index, arg0);
             break;
          case CMD_PARAM_UPDATE:
-            const param_t param = get_state(REG_CMD + 1);
-            parameter_update(ch_index, param);
+            parameter_update(ch_index, (param_t) arg0);
             break;
          default:
             break;
