@@ -411,6 +411,7 @@ void set_psu_enabled(bool enabled) {
    const bool oldState = is_psu_enabled();
 
    gpio_put(PIN_REG_EN, enabled);
+   set_state(REG_PSU_ENABLE, enabled);
 
    if (oldState != enabled) {
       if (enabled) {

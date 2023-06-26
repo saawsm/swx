@@ -64,6 +64,8 @@ void protocol_init() {
    set_state(REG_CHANNEL_COUNT, CHANNEL_COUNT);
    set_state(REG_CH_CAL_ENABLED, CH_CAL_ENABLED);
 
+   set_state(REG_PSU_ENABLE, is_psu_enabled());
+
    LOG_DEBUG("Init protocol...\n");
    i2c_slave_init(I2C_PORT_COMMS, I2C_ADDRESS_COMMS, i2c_slave_handler);
 }
@@ -79,7 +81,6 @@ void protocol_process() {
 
    // update hardware PSU state
    set_psu_enabled(get_state(REG_PSU_ENABLE));
-   set_state(REG_PSU_STATE, is_psu_enabled());
 
    // run requested cmd
    const uint8_t state = get_state(REG_CMD);

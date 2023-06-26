@@ -8,8 +8,6 @@
 #define REG_CHANNEL_COUNT (2)           // Number of channels (readonly)
 #define REG_CH_CAL_ENABLED (3)          // (readonly)
 
-#define REG_PSU_STATE (4)               // PSU enabled state (readonly)
-
 #define REG_CHn_STATUS (5)              // channel_status_t (readonly)
 #define REG_CH1_STATUS (REG_CHn_STATUS + 0)
 #define REG_CH2_STATUS (REG_CHn_STATUS + 1)
@@ -71,6 +69,9 @@
 #define CMD_CH2 (1)
 #define CMD_CH3 (2)
 #define CMD_CH4 (3)
+
+// TODO: Audio input Read
+// TODO: Fetch cal value (points)
 
 #define REG_CHnn_PARAM (128) // Channel pulse generation parameters. see PARAM_TARGET_INDEX() for required offsets
 
