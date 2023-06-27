@@ -14,7 +14,6 @@
 #endif
 
 void output_init();
-void output_free();
 
 bool output_calibrate_all();
 

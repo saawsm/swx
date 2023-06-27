@@ -90,8 +90,7 @@ int main() {
 
    // Code execution shouldn't get this far...
    LOG_WARN("End reached! Releasing resources...\n");
-   output_free(); // release resources and put GPIO into a safe and known state
-   analog_capture_free();
+   analog_capture_free(); // TODO: Remove analog_capture_free()...
 }
 
 void core1_entry() {

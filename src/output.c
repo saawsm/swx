@@ -129,7 +129,6 @@ static const channel_def_t channels[CHANNEL_COUNT] = {
 };
 
 static int pio_offsets[NUM_PIOS] = {-1};        // Lookup Table: PIO index -> PIO program offset
-static uint8_t pio_sm_counters[NUM_PIOS] = {0}; // Lookup Table: PIO index -> Number of initialized PIO state machines
 
 static queue_t pulse_queue;
 static queue_t power_queue;
@@ -175,52 +174,11 @@ void output_init() {
 
       // Claim PIO state machine
       pio_sm_claim(ch->pio, ch->sm);
-      pio_sm_counters[pio_index]++; // Increment counter so we know PIO program is in use
 
       set_state(REG_CHn_STATUS + ch_index, CHANNEL_UNCALIBRATED);
    }
 
    fetch_pulse = true;
-}
-
-void output_free() {
-   LOG_DEBUG("Free output...\n");
-
-   set_psu_enabled(false);
-
-   queue_free(&pulse_queue);
-   queue_free(&power_queue);
-
-   for (uint8_t ch_index = 0; ch_index < CHANNEL_COUNT; ch_index++) {
-      const channel_def_t* ch = &channels[ch_index];
-
-      const uint pio_index = pio_get_index(ch->pio);
-      LOG_DEBUG("Freeing channel: pio=%u sm=%d\n", pio_index, ch->sm);
-
-      // Disable and unclaim PIO state machine
-      if (pio_sm_is_claimed(ch->pio, ch->sm)) {
-         LOG_DEBUG("Freeing PIO state machine...\n");
-         pio_sm_set_enabled(ch->pio, ch->sm, false);
-         pio_sm_unclaim(ch->pio, ch->sm);
-         pio_sm_counters[pio_index]--;
-      }
-
-      // Remove PIO program if no more state machines are in use
-      if (pio_offsets[pio_index] >= 0 && pio_sm_counters[pio_index] == 0) {
-         LOG_DEBUG("Removing pulse gen PIO program: pio=%d\n", pio_index);
-         pio_remove_program(ch->pio, &CHANNEL_PIO_PROGRAM, pio_offsets[pio_index]);
-         pio_offsets[pio_index] = -1;
-      }
-
-      // Ensure gate pins are off by reinitializing GPIO, since PIO setup changed GPIO muxing
-      init_gpio(ch->pin_gate_a, GPIO_OUT, 0);
-      init_gpio(ch->pin_gate_b, GPIO_OUT, 0);
-
-      // Switch off power
-      set_dac_direct(ch->dac_channel, DAC_MAX_VALUE);
-
-      set_state(REG_CHn_STATUS + ch_index, CHANNEL_INVALID);
-   }
 }
 
 bool output_calibrate_all() {
