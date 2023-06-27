@@ -64,6 +64,7 @@ void analog_capture_init() {
    adc_gpio_init(PIN_AUDIO_RIGHT);
    adc_gpio_init(PIN_AUDIO_MIC);
 
+   LOG_DEBUG("Init internal ADC...\n");
    adc_init();
    adc_select_input(0);
    adc_set_round_robin((1 << (PIN_AUDIO_LEFT - PIN_ADC_BASE)) | (1 << (PIN_AUDIO_RIGHT - PIN_ADC_BASE)) | (1 << (PIN_AUDIO_MIC - PIN_ADC_BASE)));

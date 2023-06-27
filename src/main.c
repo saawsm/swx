@@ -35,10 +35,7 @@ static void init() {
    if (clk_success)
       LOG_DEBUG("sys_clk set to 250MHz\n");
 
-   LOG_DEBUG("Init internal ADC...\n");
-   adc_init();
-
-   // Setup I2C as master for comms with DAC (and optionally an ADC)
+      // Setup I2C as master for comms with DAC (and optionally an ADC)
 #ifdef I2C_PORT_PERIF
    LOG_DEBUG("Init peripheral I2C...\n");
    i2c_init(I2C_PORT_PERIF, I2C_FREQ_PERIF);
