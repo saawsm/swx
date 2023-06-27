@@ -6,8 +6,6 @@
 
 void protocol_init();
 
-void protocol_free();
-
 void protocol_process();
 
 #endif // _PROTOCOL_H

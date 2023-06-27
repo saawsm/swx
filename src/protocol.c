@@ -70,9 +70,6 @@ void protocol_init() {
    i2c_slave_init(I2C_PORT_COMMS, I2C_ADDRESS_COMMS, i2c_slave_handler);
 }
 
-void protocol_free() {
-   i2c_slave_deinit(I2C_PORT_COMMS);
-}
 
 void protocol_process() {
    if (!dirty) // master has signalled Stop / Restart
