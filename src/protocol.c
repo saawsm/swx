@@ -104,7 +104,7 @@ void protocol_process() {
             output_set_power(ch_index, arg0);
             break;
          case CMD_PARAM_UPDATE:
-            parameter_update(ch_index, (param_t) arg0);
+            parameter_update(ch_index, (param_t)arg0);
             break;
          default:
             break;
