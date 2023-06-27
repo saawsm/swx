@@ -57,13 +57,22 @@ static void __not_in_flash_func(i2c_slave_handler)(i2c_inst_t* i2c, i2c_slave_ev
 }
 
 void protocol_init() {
+   LOG_DEBUG("Init comms I2C...\n");
+   i2c_init(I2C_PORT_COMMS, I2C_FREQ_COMMS);
+   gpio_set_function(PIN_I2C_SDA_COMMS, GPIO_FUNC_I2C);
+   gpio_set_function(PIN_I2C_SCL_COMMS, GPIO_FUNC_I2C);
+   gpio_pull_up(PIN_I2C_SDA_COMMS);
+   gpio_pull_up(PIN_I2C_SCL_COMMS);
+
+   // clear I2C registers
    memset(mem, 0, MAX_STATE_MEM_SIZE);
 
-   // Set readonly info
+   // set readonly info
    set_state16(REG_VERSION, SWX_VERSION);
    set_state(REG_CHANNEL_COUNT, CHANNEL_COUNT);
    set_state(REG_CH_CAL_ENABLED, CH_CAL_ENABLED);
 
+   // set current states
    set_state(REG_PSU_ENABLE, is_psu_enabled());
 
    LOG_DEBUG("Init protocol...\n");

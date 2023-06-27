@@ -46,12 +46,6 @@ static void init() {
 #endif
 
    // Setup I2C as slave for comms with control device.
-   LOG_DEBUG("Init comms I2C...\n");
-   i2c_init(I2C_PORT_COMMS, I2C_FREQ_COMMS);
-   gpio_set_function(PIN_I2C_SDA_COMMS, GPIO_FUNC_I2C);
-   gpio_set_function(PIN_I2C_SCL_COMMS, GPIO_FUNC_I2C);
-   gpio_pull_up(PIN_I2C_SDA_COMMS);
-   gpio_pull_up(PIN_I2C_SCL_COMMS);
    protocol_init();
 
    // Init external DAC and ADC
