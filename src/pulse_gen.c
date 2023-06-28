@@ -49,12 +49,14 @@ void pulse_gen_process() {
    for (uint8_t ch_index = 0; ch_index < CHANNEL_COUNT; ch_index++) {
       channel_data_t* ch = &channels[ch_index];
 
+      if (!(en & (1 << ch_index))) { // when disabled, wait in off state
+         ch->state_index = 0;
+         continue;
+      }
+
       // Update dynamic parameters
       for (uint8_t i = 0; i < TOTAL_PARAMS; i++)
          parameter_step(ch_index, i);
-
-      if (!(en & (1 << ch_index)) && ch->state_index == 0) // when disabled, wait until off state
-         continue;
 
       uint32_t time = time_us_32();
       if (time > ch->next_state_time_us) {
