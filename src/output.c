@@ -356,6 +356,9 @@ void output_process_power() {
 }
 
 bool output_pulse(uint8_t ch_index, uint16_t pos_us, uint16_t neg_us, uint32_t abs_time_us) {
+   if (ch_index >= CHANNEL_COUNT)
+      return false;
+
    pulse_t pulse = {
        .channel = ch_index,
        .pos_us = pos_us,
@@ -366,6 +369,9 @@ bool output_pulse(uint8_t ch_index, uint16_t pos_us, uint16_t neg_us, uint32_t a
 }
 
 void output_set_power(uint8_t ch_index, uint16_t power) {
+   if (ch_index >= CHANNEL_COUNT)
+      return;
+
    pwr_cmd_t cmd = {.channel = ch_index, .power = power};
    queue_try_add(&power_queue, &cmd);
 }
