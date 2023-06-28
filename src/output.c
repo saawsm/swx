@@ -128,7 +128,7 @@ static const channel_def_t channels[CHANNEL_COUNT] = {
 #endif
 };
 
-static int pio_offsets[NUM_PIOS] = {-1};        // Lookup Table: PIO index -> PIO program offset
+static int pio_offsets[NUM_PIOS] = {-1}; // Lookup Table: PIO index -> PIO program offset
 
 static queue_t pulse_queue;
 static queue_t power_queue;
@@ -310,9 +310,15 @@ void output_process_pulses() {
       static const uint16_t PW_MAX = (1 << PULSE_GEN_BITS) - 1;
 
       const channel_def_t* ch = &channels[pulse.channel];
-      if (get_state(REG_CHn_STATUS + pulse.channel) == CHANNEL_READY && pulse.pos_us <= PW_MAX && pulse.neg_us <= PW_MAX) {
+      if (get_state(REG_CHn_STATUS + pulse.channel) == CHANNEL_READY) {
          if (!pio_sm_is_tx_fifo_full(ch->pio, ch->sm)) {
             static_assert(PULSE_GEN_BITS <= 16); // Ensure we can fit the bits
+
+            if (pulse.pos_us > PW_MAX)
+               pulse.pos_us = PW_MAX;
+            if (pulse.neg_us > PW_MAX)
+               pulse.neg_us = PW_MAX;
+
             uint32_t val = (pulse.pos_us << PULSE_GEN_BITS) | (pulse.neg_us);
             pio_sm_put(ch->pio, ch->sm, val);
          } else {
