@@ -58,8 +58,6 @@ bool set_dac_direct(uint8_t channel, uint16_t value) {
    buffer[1] = value >> 8;
    buffer[2] = value & 0xFF;
 
-   LOG_FINE("set_dac_direct: ch=%u value=%u\n", channel, value);
-
    int ret = i2c_write(I2C_PORT_PERIF, DAC_ADDRESS, buffer, sizeof(buffer), false, I2C_DEVICE_TIMEOUT);
    if (ret < 0) {
       LOG_ERROR("MCP4728: ret=%d - I2C write failed!\n", ret);
