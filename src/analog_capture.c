@@ -90,17 +90,6 @@ void analog_capture_init() {
    dma_channel_start(dma_adc_ch1);
 }
 
-void analog_capture_free() {
-   LOG_DEBUG("Free analog capture...\n");
-
-   analog_capture_stop();
-
-   dma_channels_abort(dma_adc_ch1, dma_adc_ch2, DMA_IRQ_0);
-
-   adc_set_round_robin(0);
-   adc_fifo_drain();
-}
-
 void analog_capture_start() {
    LOG_INFO("Starting analog capture...\n");
    adc_run(true);

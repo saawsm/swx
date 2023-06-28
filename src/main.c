@@ -90,8 +90,7 @@ int main() {
    }
 
    // Code execution shouldn't get this far...
-   LOG_WARN("End reached! Releasing resources...\n");
-   analog_capture_free(); // TODO: Remove analog_capture_free()...
+   LOG_WARN("End reached! Something went wrong...\n");
 }
 
 void core1_entry() {
