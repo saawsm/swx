@@ -96,11 +96,15 @@ void pulse_gen_process() {
             break;
       }
 
-      power_modifier *= ((float)get_state16(REG_CHnn_POWER + (ch_index * 2)) / 1000.0f); // Combine the channel power modifier with the 'state' power modifier
+      // Combine the channel power modifier with the 'state' power modifier
+      const uint16_t power_level = get_state16(REG_CHnn_POWER + (ch_index * 2));
+      power_modifier *= ((float)(power_level < CHANNEL_POWER_MAX ? power_level : CHANNEL_POWER_MAX) / CHANNEL_POWER_MAX);
 
       uint16_t power = GET_VALUE(ch_index, PARAM_POWER, TARGET_VALUE);
       if (power == 0)
          continue;
+      if (power > CHANNEL_POWER_MAX)
+         power = CHANNEL_POWER_MAX;
 
       power = (uint16_t)(power_modifier * (float)power);
 
@@ -197,6 +201,9 @@ static inline void parameter_step(uint8_t ch_index, param_t param) {
 }
 
 void parameter_update(uint8_t ch_index, param_t param) {
+   if (ch_index >= CHANNEL_COUNT || param >= TOTAL_PARAMS)
+      return;
+
    // Get the mode without the notify bit
    const uint16_t mode = GET_VALUE(ch_index, param, TARGET_MODE) & ~TARGET_MODE_NOTIFY_BIT;
 
