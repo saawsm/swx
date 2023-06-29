@@ -64,6 +64,7 @@ void analog_capture_init() {
    adc_gpio_init(PIN_AUDIO_RIGHT);
    adc_gpio_init(PIN_AUDIO_MIC);
 
+   LOG_DEBUG("Init internal ADC...\n");
    adc_init();
    adc_select_input(0);
    adc_set_round_robin((1 << (PIN_AUDIO_LEFT - PIN_ADC_BASE)) | (1 << (PIN_AUDIO_RIGHT - PIN_ADC_BASE)) | (1 << (PIN_AUDIO_MIC - PIN_ADC_BASE)));
@@ -87,17 +88,6 @@ void analog_capture_init() {
    // Start channel 1
    buf_adc_ready = 0;
    dma_channel_start(dma_adc_ch1);
-}
-
-void analog_capture_free() {
-   LOG_DEBUG("Free analog capture...\n");
-
-   analog_capture_stop();
-
-   dma_channels_abort(dma_adc_ch1, dma_adc_ch2, DMA_IRQ_0);
-
-   adc_set_round_robin(0);
-   adc_fifo_drain();
 }
 
 void analog_capture_start() {

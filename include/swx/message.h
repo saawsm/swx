@@ -1,71 +1,81 @@
 #ifndef _MESSAGE_H
 #define _MESSAGE_H
 
-/*
-Messages are variable length with a minimum of one byte. Some messages use the MP (MSG_MP_MASK) to represent
-a channel index, target, or boolean state allowing for a single byte message.
-Most other messages have 2 additional bytes representing a uint16_t, with some messages having an additional 3 bytes.
+#define READ_ONLY_ADDRESS_BOUNDARY (0x20)
+#define MAX_STATE_MEM_SIZE (0x350)
 
---------------------------------------------------------------------------------
-         0 (CTRL)        |        +1       |       +2        |        +3       |
---------------------------------------------------------------------------------
-ID | R/W |   CMD |    MP |            ARG1 |            ARG2 |            ARG3 |
- 1 |   0 |  0000 |    00 |        00000000 |        00000000 |        00000000 |
---------------------------------------------------------------------------------
+#define REG_VERSION (0)                 // bytes 0 & 1 (readonly)
+#define REG_VERSION_L (REG_VERSION)     // (readonly)
+#define REG_VERSION_H (REG_VERSION + 1) // (readonly)
 
-ID = CTRL Magic Bit (used by STDIO comms to differentiate between log messages and commands)
-R/W = Read/Write
-RO = Read Only
-WO = Write Only
+#define REG_CHANNEL_COUNT (2)           // Number of channels (readonly)
+#define REG_CH_CAL_ENABLED (3)          // (readonly)
 
-Note:
-    Ignoring GPIO pin limitations, swx has the capability to support up to 7 output channels (or 8 with reduced features).
-    However, the current communication protocol can only support up to 4 channels (2-bit MSG_MP).
-    I think the trade off in performance and simplicity wins over the edge case of supporting devices with more than 4 channels.
-*/
+#define REG_CHn_STATUS (5)              // channel_status_t (readonly)
+#define REG_CH1_STATUS (REG_CHn_STATUS + 0)
+#define REG_CH2_STATUS (REG_CHn_STATUS + 1)
+#define REG_CH3_STATUS (REG_CHn_STATUS + 2)
+#define REG_CH4_STATUS (REG_CHn_STATUS + 3)
 
-#define MSG_ID_BIT (1 << 7)
+#define REG_CHnn_CAL_VALUE (9) // uint16_t channel cal value (readonly)
+#define REG_CH1_CAL_VALUE (REG_CHnn_CAL_VALUE + 0)
+#define REG_CH2_CAL_VALUE (REG_CHnn_CAL_VALUE + 2)
+#define REG_CH3_CAL_VALUE (REG_CHnn_CAL_VALUE + 4)
+#define REG_CH4_CAL_VALUE (REG_CHnn_CAL_VALUE + 6)
 
-// CMD Read/Write
-#define MSG_MODE (6)
-#define MSG_MODE_MASK (1 << MSG_MODE)
-#define MSG_MODE_READ (0)
-#define MSG_MODE_WRITE (1)
+// -----------------------------------------------------
 
-// Multi purpose (cmd dependant) - Channel index, command state, etc
-#define MSG_MP (0)
-#define MSG_MP_MASK (3 << MSG_MP)
-#define MSG_MP_STATE_FALSE (0) // CMD State = false
-#define MSG_MP_STATE_TRUE (1)  // CMD State = true
-#define MSG_MP_CHANNEL_1 (0)   // Channel 1
-#define MSG_MP_CHANNEL_2 (1)   // Channel 2
-#define MSG_MP_CHANNEL_3 (2)   // Channel 3
-#define MSG_MP_CHANNEL_4 (3)   // Channel 4
+#define REG_PSU_ENABLE (32)    // Enable/disable PSU
 
-// Command
-#define MSG_CMD (2)
-#define MSG_CMD_MASK (15 << MSG_CMD)
+#define REG_CH_GEN_ENABLE (33) // Channel pulse_gen enabled
+#define REG_CH1_GEN_ENABLE_BIT (0)
+#define REG_CH1_GEN_ENABLE_MASK (1 << REG_CH1_GEN_ENABLE_BIT)
+#define REG_CH2_GEN_ENABLE_BIT (1)
+#define REG_CH2_GEN_ENABLE_MASK (1 << REG_CH2_GEN_ENABLE_BIT)
+#define REG_CH3_GEN_ENABLE_BIT (2)
+#define REG_CH3_GEN_ENABLE_MASK (1 << REG_CH3_GEN_ENABLE_BIT)
+#define REG_CH4_GEN_ENABLE_BIT (3)
+#define REG_CH4_GEN_ENABLE_MASK (1 << REG_CH4_GEN_ENABLE_BIT)
 
-#define MSG_CMD_STATUS (0)  // SWX Status - Version and channel count (RO)
-#define MSG_CMD_PSU (1)     // Power Supply State (R/W)
+#define REG_CHnn_POWER (34) // uint16_t channel power level (scaled with PARAM_POWER)
+#define REG_CH1_POWER (REG_CHnn_POWER + 0)
+#define REG_CH2_POWER (REG_CHnn_POWER + 2)
+#define REG_CH3_POWER (REG_CHnn_POWER + 4)
+#define REG_CH4_POWER (REG_CHnn_POWER + 6)
 
-#define MSG_CMD_AI_READ (2) // Read Audio Input (RO)
+// Status flags for when the param value has reached an extent (min/max). Flag bits should be reset when acknowledged.
+#define REG_CHnn_PARAM_FLAGS (50)
+#define REG_CH1_PARAM_FLAGS (REG_CHnn_PARAM_FLAGS + 0)
+#define REG_CH2_PARAM_FLAGS (REG_CHnn_PARAM_FLAGS + 2)
+#define REG_CH3_PARAM_FLAGS (REG_CHnn_PARAM_FLAGS + 4)
+#define REG_CH4_PARAM_FLAGS (REG_CHnn_PARAM_FLAGS + 6)
 
-// All MSG_CMD_CH_ commands use MSG_MP as the channel index
-#define MSG_CMD_CH_STATUS (8)   // Channel Status - See channel_status_t (RO)
-#define MSG_CMD_CH_EN (9)       // Channel Enabled State (R/W) - Supports switch off delay
-#define MSG_CMD_CH_POWER (10)    // Channel Power Level Percent (R/W)
-#define MSG_CMD_CH_PARAM (11)    // Dynamic Channel Parameter (R/W)
-#define MSG_CMD_CH_AI_SRC (12)   // Channel Audio Source (R/W)
+#define REG_CHn_AUDIO_SRC (66) // Channel audio source, override default pulse_gen. see analog_channel_t
+#define REG_CH1_AUDIO_SRC (REG_CHn_AUDIO_SRC + 0)
+#define REG_CH2_AUDIO_SRC (REG_CHn_AUDIO_SRC + 1)
+#define REG_CH3_AUDIO_SRC (REG_CHn_AUDIO_SRC + 2)
+#define REG_CH4_AUDIO_SRC (REG_CHn_AUDIO_SRC + 3)
 
-#define MSG_CMD_CH_LL_PULSE (13) // Immediately pulse channel, bypassing pulse generation (R/W)
-#define MSG_CMD_CH_LL_POWER (14) // Immediately set channel power, bypassing pulse generation (WO)
+// CMD register, clears on execute. CMD id in upper nibble, channel index in lower nibble.
+#define REG_CMD (82)
+#define REG_CMD_CH (15)
+#define REG_CMD_CH_BIT (0)
+#define REG_CMD_CH_MASK (REG_CMD_CH << REG_CMD_CH_BIT)
+#define REG_CMD_ACTION (15)
+#define REG_CMD_ACTION_BIT (4)
+#define REG_CMD_ACTION_MASK (REG_CMD_ACTION << REG_CMD_ACTION_BIT)
 
-#define MSG_CMD_CH_PARAM_FLAGS (15) // Channel Parameter State Flags (R/W)
+#define CMD_PULSE (1)        // arg: pulse_width (uint16_t)
+#define CMD_SET_POWER (2)    // arg: power level (uint16_t)
+#define CMD_PARAM_UPDATE (3) // arg: param (param_t, uint8_t)
+#define CMD_CH1 (0)
+#define CMD_CH2 (1)
+#define CMD_CH3 (2)
+#define CMD_CH4 (3)
 
-// ----------------------------------------------------------------------------------------------------
+// TODO: Audio input Read
+// TODO: Fetch cal value (points)
 
-#define MSG_CTRL(mode, cmd, mp) ((mode) << MSG_MODE) | ((cmd) << MSG_CMD) | ((mp) << MSG_MP)
-#define HL16(number) ((number) >> 8), ((number)&0xff)
+#define REG_CHnn_PARAM (128) // Channel pulse generation parameters. see PARAM_TARGET_INDEX() for required offsets
 
-#endif // _MESSAGES_H
+#endif                       // _MESSAGE_H

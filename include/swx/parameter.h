@@ -80,4 +80,14 @@ typedef enum {
 
 } target_mode_t;
 
+#define PARAM_TARGET_INDEX_OFFSET(param, target) ((((param)*2) * TOTAL_TARGETS) + ((target)*2))
+#define PARAM_TARGET_INDEX_TOTAL (PARAM_TARGET_INDEX_OFFSET(TOTAL_PARAMS - 1, TOTAL_TARGETS - 1))
+
+// Calculates the byte offset for the uint16_t value representing a parameter target for the given channel.
+// Assumes values are 16-bit (indices are spaced by 2)
+#define PARAM_TARGET_INDEX(ch_index, param, target) (((ch_index)*PARAM_TARGET_INDEX_TOTAL) + PARAM_TARGET_INDEX_OFFSET(param, target) + ((ch_index)*2))
+
+// Array size in bytes for all parameter target indices
+#define PARAM_TARGET_INDEX_MAX(channel_count) (PARAM_TARGET_INDEX((channel_count) - 1, TOTAL_PARAMS - 1, TOTAL_TARGETS - 1) + 2)
+
 #endif // _PARAMETER_H

@@ -4,8 +4,7 @@
 #include <inttypes.h>
 
 typedef enum {
-   CHANNEL_UNKNOWN = 0,
-   CHANNEL_INVALID,
+   CHANNEL_INVALID = 0,
    CHANNEL_FAULT,
    CHANNEL_UNCALIBRATED,
    CHANNEL_CALIBRATING,

@@ -88,7 +88,7 @@ static bool write_register(uint8_t reg, uint16_t value) {
    buffer[1] = value >> 8;
    buffer[2] = value & 0xFF;
 
-   int ret = i2c_write(I2C_PORT, ADC_ADDRESS, buffer, sizeof(buffer), false, I2C_DEVICE_TIMEOUT);
+   int ret = i2c_write(I2C_PORT_PERIF, ADC_ADDRESS, buffer, sizeof(buffer), false, I2C_DEVICE_TIMEOUT);
    if (ret < 0) {
       LOG_ERROR("ADS1015:write_register: ret=%d - I2C write failed!\n", ret);
       return false;
@@ -99,13 +99,13 @@ static bool write_register(uint8_t reg, uint16_t value) {
 static uint16_t read_register(uint8_t reg) {
    buffer[0] = reg;
 
-   int ret = i2c_write(I2C_PORT, ADC_ADDRESS, buffer, 1, true, I2C_DEVICE_TIMEOUT);
+   int ret = i2c_write(I2C_PORT_PERIF, ADC_ADDRESS, buffer, 1, true, I2C_DEVICE_TIMEOUT);
    if (ret < 0) {
       LOG_ERROR("ADS1015:write_register: ret=%d - I2C write failed!\n", ret);
       return 0;
    }
 
-   ret = i2c_read(I2C_PORT, ADC_ADDRESS, buffer, 2, false, I2C_DEVICE_TIMEOUT);
+   ret = i2c_read(I2C_PORT_PERIF, ADC_ADDRESS, buffer, 2, false, I2C_DEVICE_TIMEOUT);
    if (ret < 0) {
       LOG_ERROR("ADS1015:read_register: ret=%d - I2C read failed!\n", ret);
       return 0;

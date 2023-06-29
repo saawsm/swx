@@ -14,7 +14,6 @@ typedef enum {
 } analog_channel_t;
 
 void analog_capture_init();
-void analog_capture_free();
 
 void analog_capture_start();
 void analog_capture_stop();

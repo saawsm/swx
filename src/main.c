@@ -4,11 +4,11 @@
 
 #include <hardware/adc.h>
 #include <hardware/i2c.h>
-#include <hardware/spi.h>
 
 #include "output.h"
 #include "protocol.h"
 #include "analog_capture.h"
+#include "pulse_gen.h"
 
 #include "util/i2c.h"
 #include "util/gpio.h"
@@ -16,8 +16,6 @@
 void core1_entry();
 
 bool blink_led_timer_cb(repeating_timer_t* rt);
-
-extern void pulse_gen_process();
 
 repeating_timer_t failure_timer;
 
@@ -37,8 +35,18 @@ static void init() {
    if (clk_success)
       LOG_DEBUG("sys_clk set to 250MHz\n");
 
-   LOG_DEBUG("Init internal ADC...\n");
-   adc_init();
+   // Setup I2C as slave for comms with control device.
+   protocol_init();
+
+   // Setup I2C as master for comms with DAC (and optionally an ADC)
+#ifdef I2C_PORT_PERIF
+   LOG_DEBUG("Init peripheral I2C...\n");
+   i2c_init(I2C_PORT_PERIF, I2C_FREQ_PERIF);
+   gpio_set_function(PIN_I2C_SDA_PERIF, GPIO_FUNC_I2C);
+   gpio_set_function(PIN_I2C_SCL_PERIF, GPIO_FUNC_I2C);
+   gpio_pull_up(PIN_I2C_SDA_PERIF);
+   gpio_pull_up(PIN_I2C_SCL_PERIF);
+#endif
 
    // Init external DAC and ADC
    extern void init_dac();
@@ -47,27 +55,8 @@ static void init() {
    extern void init_adc();
    init_adc();
 
-   // Setup I2C as master for comms with DAC (and optionally an ADC)
-#ifdef I2C_PORT
-   LOG_DEBUG("Init I2C...\n");
-   i2c_init(I2C_PORT, I2C_FREQ);
-   gpio_set_function(PIN_I2C_SDA, GPIO_FUNC_I2C);
-   gpio_set_function(PIN_I2C_SCL, GPIO_FUNC_I2C);
-   gpio_pull_up(PIN_I2C_SDA);
-   gpio_pull_up(PIN_I2C_SCL);
-#endif
-
-   // Setup SPI as slave for comms with host device
-#ifdef SPI_PORT
-   LOG_DEBUG("Init SPI...\n");
-   spi_init(SPI_PORT, SPI_FREQ);
-   spi_set_format(SPI_PORT, 8, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
-   spi_set_slave(SPI_PORT, true);
-   gpio_set_function(PIN_SPI_MOSI, GPIO_FUNC_SPI);
-   gpio_set_function(PIN_SPI_SCK, GPIO_FUNC_SPI);
-   gpio_set_function(PIN_SPI_MISO, GPIO_FUNC_SPI);
-   gpio_set_function(PIN_SPI_CS, GPIO_FUNC_SPI);
-#endif
+   analog_capture_init();
+   analog_capture_start();
 }
 
 int main() {
@@ -85,30 +74,23 @@ int main() {
    multicore_reset_core1();
    multicore_launch_core1(core1_entry);
 
-   analog_capture_init();
+   pulse_gen_init();
 
    LOG_DEBUG("Starting core0 loop...\n");
 
-   // Device ready. Generate fake received MSG_CMD_STATUS message, so we can reply
-   // instead of constructing the byte buffer manually.
-   // Note: Exclude SPI since SPI slaves cant start a transfer, instead assert interrupt pin.
-   parse_message(MSG_CH_UART | MSG_CH_STDIO, MSG_CMD_STATUS << MSG_CMD);
+   // Device ready. Assert interrupt pin, to notify control device.
    gpio_assert(PIN_INT);
-
-   analog_capture_start();
-
    LOG_INFO("Ready.\n");
+
    while (true) {
-      protocol_process(MSG_CH_SPI | MSG_CH_UART | MSG_CH_STDIO);
+      protocol_process();
 
       pulse_gen_process();
       output_process_pulses();
    }
 
    // Code execution shouldn't get this far...
-   LOG_WARN("End reached! Releasing resources...\n");
-   output_free(); // release resources and put GPIO into a safe and known state
-   analog_capture_free();
+   LOG_WARN("End reached! Something went wrong...\n");
 }
 
 void core1_entry() {

@@ -30,7 +30,7 @@ bool set_dac_direct(uint8_t channel, uint16_t value) {
    uint8_t buffer[3];
 
 #ifdef I2C_CHECK_WRITE
-   if (i2c_get_write_available(I2C_PORT) < sizeof(buffer)) { // Check if we can write without blocking
+   if (i2c_get_write_available(I2C_PORT_PERIF) < sizeof(buffer)) { // Check if we can write without blocking
       LOG_WARN("MCP4728 - I2C buffer full!\n");
       return false;
    }
@@ -58,9 +58,7 @@ bool set_dac_direct(uint8_t channel, uint16_t value) {
    buffer[1] = value >> 8;
    buffer[2] = value & 0xFF;
 
-   LOG_FINE("set_dac_direct: ch=%u value=%u\n", channel, value);
-
-   int ret = i2c_write(I2C_PORT, DAC_ADDRESS, buffer, sizeof(buffer), false, I2C_DEVICE_TIMEOUT);
+   int ret = i2c_write(I2C_PORT_PERIF, DAC_ADDRESS, buffer, sizeof(buffer), false, I2C_DEVICE_TIMEOUT);
    if (ret < 0) {
       LOG_ERROR("MCP4728: ret=%d - I2C write failed!\n", ret);
       return false;
