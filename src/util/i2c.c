@@ -41,8 +41,9 @@ void i2c_scan(i2c_inst_t* i2c) { // TODO: Return found I2C device addresses
       if ((address & 0x78) == 0 || (address & 0x78) == 0x78) // I2C reserves some addresses for special purposes. These are 1111XXX and 0000XXX.
          continue;
 
-      if (i2c_read_blocking(i2c, address, &data, 1, false) > 0)
+      if (i2c_read_blocking(i2c, address, &data, 1, false) > 0) {
          LOG_DEBUG("Found device at 0x%02x\n", address);
+      }
    }
 
 #ifdef I2C_MUTEX_TIMEOUT

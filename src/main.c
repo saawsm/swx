@@ -49,8 +49,9 @@ static void init() {
    stdio_init_all();                                    // needs to be called after setting clock
 
    LOG_INFO("~~ swx driver %u ~~\nStarting up...\n", SWX_VERSION);
-   if (clk_success)
+   if (clk_success) {
       LOG_DEBUG("sys_clk set to 250MHz\n");
+   }
 
    // Setup I2C as slave for comms with control device.
    protocol_init();
