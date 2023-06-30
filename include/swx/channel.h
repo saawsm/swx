@@ -15,19 +15,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef _I2C_H
-#define _I2C_H
+#ifndef _CHANNEL_H
+#define _CHANNEL_H
 
-#include "../swx.h"
-#include <hardware/i2c.h>
+#include <inttypes.h>
 
-#ifndef I2C_DEVICE_TIMEOUT
-#define I2C_DEVICE_TIMEOUT (2000)
-#endif
+#define TOTAL_ANALOG_CHANNELS (3)
 
-void i2c_scan(i2c_inst_t* i2c);
+typedef enum {
+   CHANNEL_INVALID = 0,
+   CHANNEL_FAULT,
+   CHANNEL_UNCALIBRATED,
+   CHANNEL_CALIBRATING,
+   CHANNEL_READY,
+} channel_status_t;
 
-int i2c_write(i2c_inst_t* i2c, uint8_t addr, const uint8_t* src, size_t len, bool nostop, uint timeout_us);
-int i2c_read(i2c_inst_t* i2c, uint8_t addr, uint8_t* dst, size_t len, bool nostop, uint timeout_us);
+typedef enum {
+   AUDIO_CHANNEL_NONE = 0,
 
-#endif // _I2C_H
+   AUDIO_CHANNEL_MIC,
+   AUDIO_CHANNEL_LEFT,
+   AUDIO_CHANNEL_RIGHT,
+} analog_channel_t;
+
+#endif // _CHANNEL_H
