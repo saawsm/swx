@@ -116,6 +116,7 @@ static uint16_t read_register(uint8_t reg) {
 
 void init_adc() {}
 
+// Based on https://github.com/adafruit/Adafruit_ADS1X15/blob/7026e332655fbf9cb1b9523748d78324ffafd11e/Adafruit_ADS1X15.cpp
 bool adc_read_counts(uint8_t channel, uint16_t* counts) {
    if (channel >= ADS1015_CHANNEL_COUNT) {
       LOG_WARN("ADS1015: ch=%u - Out of range channel index!\n", channel);
