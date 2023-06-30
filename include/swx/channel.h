@@ -15,10 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef _STATUS_H
-#define _STATUS_H
+#ifndef _CHANNEL_H
+#define _CHANNEL_H
 
 #include <inttypes.h>
+
+#define TOTAL_ANALOG_CHANNELS (3)
 
 typedef enum {
    CHANNEL_INVALID = 0,
@@ -28,4 +30,12 @@ typedef enum {
    CHANNEL_READY,
 } channel_status_t;
 
-#endif // _STATUS_H
+typedef enum {
+   AUDIO_CHANNEL_NONE = 0,
+
+   AUDIO_CHANNEL_MIC,
+   AUDIO_CHANNEL_LEFT,
+   AUDIO_CHANNEL_RIGHT,
+} analog_channel_t;
+
+#endif // _CHANNEL_H

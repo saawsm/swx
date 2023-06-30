@@ -22,7 +22,7 @@
 #include "util/i2c.h"
 #include "util/gpio.h"
 
-#include "status.h"
+#include "channel.h"
 #include "state.h"
 
 #include "pulse_gen.pio.h"
