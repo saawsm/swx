@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define SWX_VERSION (1100)
+#include "version.h"
 
 #if !defined(PIN_LED) && defined(PICO_DEFAULT_LED_PIN)
 #define PIN_LED (PICO_DEFAULT_LED_PIN)
