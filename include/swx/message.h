@@ -19,16 +19,16 @@
 #define _MESSAGE_H
 
 #define READ_ONLY_ADDRESS_BOUNDARY (0x20)
-#define MAX_STATE_MEM_SIZE (0x350)
+#define MAX_STATE_MEM_SIZE (0x450)
 
 #define REG_VERSION (0)                 // bytes 0 & 1 (readonly)
 #define REG_VERSION_L (REG_VERSION)     // (readonly)
 #define REG_VERSION_H (REG_VERSION + 1) // (readonly)
 
-#define REG_CHANNEL_COUNT (2)           // Number of channels (readonly)
-#define REG_CH_CAL_ENABLED (3)          // (readonly)
+#define REG_CHANNEL_COUNT (2)  // Number of channels (readonly)
+#define REG_CH_CAL_ENABLED (3) // (readonly)
 
-#define REG_CHn_STATUS (5)              // channel_status_t (readonly)
+#define REG_CHn_STATUS (5) // channel_status_t (readonly)
 #define REG_CH1_STATUS (REG_CHn_STATUS + 0)
 #define REG_CH2_STATUS (REG_CHn_STATUS + 1)
 #define REG_CH3_STATUS (REG_CHn_STATUS + 2)
@@ -42,7 +42,7 @@
 
 // -----------------------------------------------------
 
-#define REG_PSU_ENABLE (32)    // Enable/disable PSU
+#define REG_PSU_ENABLE (32) // Enable/disable PSU
 
 #define REG_CH_GEN_ENABLE (33) // Channel pulse_gen enabled
 #define REG_CH1_GEN_ENABLE_BIT (0)
@@ -93,6 +93,13 @@
 // TODO: Audio input Read
 // TODO: Fetch cal value (points)
 
-#define REG_CHnn_PARAM (128) // Channel pulse generation parameters. see PARAM_TARGET_INDEX() for required offsets
+#define MAX_SEQ_COUNT (128)
 
-#endif                       // _MESSAGE_H
+#define REG_SEQ_PERIOD (90) // milliseconds (uint16_t)
+#define REG_SEQ_INDEX (92)
+#define REG_SEQ_COUNT (93) // sequence item count (uint8_t)
+#define REG_SEQn (94)      // max MAX_SEQ_COUNT
+
+#define REG_CHnn_PARAM (224) // Channel pulse generation parameters. see PARAM_TARGET_INDEX() for required offsets
+
+#endif // _MESSAGE_H

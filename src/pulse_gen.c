@@ -25,13 +25,15 @@
 #define STATE_COUNT (4)
 
 static const param_t STATE_SEQUENCE[STATE_COUNT] = {
-    PARAM_OFF_TIME,
     PARAM_ON_RAMP_TIME,
     PARAM_ON_TIME,
     PARAM_OFF_RAMP_TIME,
+    PARAM_OFF_TIME,
 };
 
 static channel_data_t channels[CHANNEL_COUNT];
+
+static uint32_t sequencer_time_us;
 
 extern void audio_process(channel_data_t* ch, uint8_t ch_index, uint16_t power);
 
@@ -40,18 +42,20 @@ static inline void parameter_step(uint8_t ch_index, param_t param);
 void pulse_gen_init() {
    LOG_DEBUG("Init pulse generator...\n");
 
+   sequencer_time_us = 0;
+
    // Set default parameter values
    for (uint8_t ch_index = 0; ch_index < CHANNEL_COUNT; ch_index++) {
       channels[ch_index].state_index = 0;
 
-      SET_VALUE(ch_index, PARAM_POWER, TARGET_MAX, 1000);         // 100%
-      SET_VALUE(ch_index, PARAM_POWER, TARGET_VALUE, 1000);       // 100%
+      SET_VALUE(ch_index, PARAM_POWER, TARGET_MAX, 1000);   // 100%
+      SET_VALUE(ch_index, PARAM_POWER, TARGET_VALUE, 1000); // 100%
 
-      SET_VALUE(ch_index, PARAM_FREQUENCY, TARGET_MAX, 5000);     // max. 500 Hz (soft limit - only auto cycling)
-      SET_VALUE(ch_index, PARAM_FREQUENCY, TARGET_VALUE, 1800);   // 180 Hz
+      SET_VALUE(ch_index, PARAM_FREQUENCY, TARGET_MAX, 5000);   // max. 500 Hz (soft limit - only auto cycling)
+      SET_VALUE(ch_index, PARAM_FREQUENCY, TARGET_VALUE, 1800); // 180 Hz
 
-      SET_VALUE(ch_index, PARAM_PULSE_WIDTH, TARGET_MAX, 500);    // max. 500 us
-      SET_VALUE(ch_index, PARAM_PULSE_WIDTH, TARGET_VALUE, 150);  // 150 us
+      SET_VALUE(ch_index, PARAM_PULSE_WIDTH, TARGET_MAX, 500);   // max. 500 us
+      SET_VALUE(ch_index, PARAM_PULSE_WIDTH, TARGET_VALUE, 150); // 150 us
 
       SET_VALUE(ch_index, PARAM_ON_TIME, TARGET_MAX, 10000);      // 10 seconds
       SET_VALUE(ch_index, PARAM_ON_RAMP_TIME, TARGET_MAX, 5000);  // 5 seconds
@@ -61,13 +65,42 @@ void pulse_gen_init() {
 }
 
 void pulse_gen_process() {
-   const uint8_t en = get_state(REG_CH_GEN_ENABLE);
+   // update sequencer and active sequence mask
+   const uint16_t seq_period_ms = get_state16(REG_SEQ_PERIOD);
+   const uint8_t seq_count = get_state(REG_SEQ_COUNT);
+
+   uint8_t sequencer_mask;
+   if (seq_period_ms == 0 || seq_count == 0) {
+      sequencer_mask = 0xff; // if sequencer is disabled, make mask all enabled
+   } else {
+
+      uint8_t sequencer_index = get_state(REG_SEQ_INDEX);
+      if (sequencer_index >= MAX_SEQ_COUNT)
+         sequencer_index = MAX_SEQ_COUNT - 1;
+
+      uint32_t time = time_us_32();
+      if (time > sequencer_time_us) {
+         if (++sequencer_index >= seq_count || sequencer_index >= MAX_SEQ_COUNT)
+            sequencer_index = 0; // Increment or reset after REG_SEQ_COUNT
+
+         set_state(REG_SEQ_INDEX, sequencer_index);
+
+         // Set the next sequencer time based on the REG_SEQ_PERIOD
+         sequencer_time_us = time + (seq_period_ms * 1000);
+      }
+
+      sequencer_mask = get_state(REG_SEQn + sequencer_index);
+   }
+
+   // currently enabled channel mask based on REG_CH_GEN_ENABLE and current sequencer slot item
+   const uint8_t en = get_state(REG_CH_GEN_ENABLE) & sequencer_mask;
 
    for (uint8_t ch_index = 0; ch_index < CHANNEL_COUNT; ch_index++) {
       channel_data_t* ch = &channels[ch_index];
 
-      if (!(en & (1 << ch_index))) { // when disabled, wait in off state
+      if (!(en & (1 << ch_index))) { // when disabled, hold state at zero
          ch->state_index = 0;
+         ch->next_state_time_us = time_us_32() + (GET_VALUE(ch_index, STATE_SEQUENCE[ch->state_index], TARGET_VALUE) * 1000);
          continue;
       }
 
@@ -78,9 +111,9 @@ void pulse_gen_process() {
       uint32_t time = time_us_32();
       if (time > ch->next_state_time_us) {
          if (++ch->state_index >= STATE_COUNT)
-            ch->state_index = 0; // Increment or reset after 4 states (off, on_ramp, on, off_ramp)
+            ch->state_index = 0; // Increment or reset after 4 states (on_ramp, on, off_ramp, off)
 
-         // Set the next state time based on the state parameter (off_time, on_ramp_time, on_time, off_ramp_time)
+         // Set the next state time based on the state parameter (on_ramp_time, on_time, off_ramp_time, off_time)
          ch->next_state_time_us = time + (GET_VALUE(ch_index, STATE_SEQUENCE[ch->state_index], TARGET_VALUE) * 1000);
       }
 
@@ -148,7 +181,7 @@ void pulse_gen_process() {
 
             ch->next_pulse_time_us = time + (10000000ul / frequency); // dHz -> us
 
-            // Pulse the channnel
+            // Pulse the channel
             output_pulse(ch_index, pulse_width, pulse_width, time_us_32());
          }
       }
