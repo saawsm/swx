@@ -68,6 +68,10 @@ typedef enum {
    /// The cycling mode the parameter is using. Determines how the value resets when it reaches min/max.
    TARGET_MODE,
 
+   /// Execute actions between start/end indices when value reaches min/max. Lower byte contains end index, upper byte contains start index.
+   /// Disable by setting upper and lower bytes equal
+   TARGET_ACTION_RANGE,
+
    TOTAL_TARGETS // Number of targets in enum, used for arrays
 
 } target_t;
@@ -97,6 +101,18 @@ typedef enum {
 
 } target_mode_t;
 
+typedef enum {
+   ACTION_NONE = 0,
+   ACTION_SET,
+   ACTION_INCREMENT,
+   ACTION_DECREMENT,
+   ACTION_ENABLE,
+   ACTION_DISABLE,
+   ACTION_TOGGLE,
+   ACTION_EXECUTE,
+   ACTION_PARAM_UPDATE,
+} action_type_t;
+
 #define PARAM_TARGET_INDEX_OFFSET(param, target) ((((param)*2) * TOTAL_TARGETS) + ((target)*2))
 #define PARAM_TARGET_INDEX_TOTAL (PARAM_TARGET_INDEX_OFFSET(TOTAL_PARAMS - 1, TOTAL_TARGETS - 1))
 
@@ -105,6 +121,6 @@ typedef enum {
 #define PARAM_TARGET_INDEX(ch_index, param, target) (((ch_index)*PARAM_TARGET_INDEX_TOTAL) + PARAM_TARGET_INDEX_OFFSET(param, target) + ((ch_index)*2))
 
 // Array size in bytes for all parameter target indices
-#define PARAM_TARGET_INDEX_MAX(channel_count) (PARAM_TARGET_INDEX((channel_count) - 1, TOTAL_PARAMS - 1, TOTAL_TARGETS - 1) + 2)
+#define PARAM_TARGET_INDEX_MAX(channel_count) (PARAM_TARGET_INDEX((channel_count)-1, TOTAL_PARAMS - 1, TOTAL_TARGETS - 1) + 2)
 
 #endif // _PARAMETER_H

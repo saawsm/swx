@@ -188,6 +188,89 @@ void pulse_gen_process() {
    }
 }
 
+static inline void execute_action_list(uint8_t al_start, uint8_t al_end);
+
+static inline void execute_action(uint8_t a_index) {
+   if (a_index >= MAX_ACTIONS)
+      return;
+
+   const action_type_t type = get_state(REG_An_TYPE + a_index);
+   if (type == ACTION_NONE)
+      return;
+
+   const uint8_t channel_mask = get_state(REG_An_CHANNEL_MASK + a_index);
+   const uint16_t value = get_state16(REG_Ann_VALUE + (a_index * 2));
+
+   switch (type) {
+      case ACTION_SET:
+      case ACTION_INCREMENT:
+      case ACTION_DECREMENT: { // set,increment,decrement param+target value for all channels in mask, while keeping it constrained to TARGET_MIN/MAX
+         const uint8_t param_target = get_state(REG_An_PARAM_TARGET + a_index);
+         const param_t param = param_target >> 8;
+         const target_t target = param_target & 0xff;
+
+         if (param >= TOTAL_PARAMS || target >= TOTAL_TARGETS)
+            return;
+
+         uint16_t val = value;
+         for (uint8_t ch_index = 0; ch_index < CHANNEL_COUNT; ch_index++) {
+            if (~channel_mask & (1 << ch_index))
+               continue;
+
+            if (type == ACTION_INCREMENT) {
+               val = GET_VALUE(ch_index, param, target) + value;
+            } else if (type == ACTION_DECREMENT) {
+               val = GET_VALUE(ch_index, param, target) - value;
+            }
+
+            if (target == TARGET_VALUE) {
+               const uint16_t min = GET_VALUE(ch_index, param, TARGET_MIN);
+               const uint16_t max = GET_VALUE(ch_index, param, TARGET_MAX);
+
+               if (val > max) {
+                  val = max;
+               } else if (val < min) {
+                  val = min;
+               }
+            }
+
+            SET_VALUE(ch_index, param, target, val);
+         }
+         break;
+      }
+      case ACTION_ENABLE:
+         set_state(REG_CH_GEN_ENABLE,
+                   get_state(REG_CH_GEN_ENABLE) | channel_mask); // TODO: Support auto-disable channel generation using action value as delay in milliseconds
+         break;
+      case ACTION_DISABLE:
+         set_state(REG_CH_GEN_ENABLE,
+                   get_state(REG_CH_GEN_ENABLE) & ~channel_mask); // TODO: Support auto-enable channel generation using action value as delay in milliseconds
+         break;
+      case ACTION_TOGGLE:
+         set_state(REG_CH_GEN_ENABLE,
+                   get_state(REG_CH_GEN_ENABLE) ^ channel_mask); // TODO: Support auto-enable/disable channel generation using action value as delay in milliseconds
+         break;
+      case ACTION_EXECUTE:                              // run another action list from this list
+         execute_action_list(value >> 8, value & 0xff); // start:upper byte, end: lower byte
+         break;
+      case ACTION_PARAM_UPDATE: // update parameter step/rate using channel mask
+         const uint8_t param_target = get_state(REG_An_PARAM_TARGET + a_index);
+         const param_t param = param_target >> 8;
+         for (uint8_t ch_index = 0; ch_index < CHANNEL_COUNT; ch_index++) {
+            if (channel_mask & (1 << ch_index))
+               parameter_update(ch_index, param);
+         }
+         break;
+      default:
+         break;
+   }
+}
+
+static inline void execute_action_list(uint8_t al_start, uint8_t al_end) {
+   for (uint8_t i = al_start; i < al_end; i++)
+      execute_action(i);
+}
+
 static inline void parameter_step(uint8_t ch_index, param_t param) {
    parameter_data_t* p = &channels[ch_index].parameters[param];
 
@@ -211,9 +294,8 @@ static inline void parameter_step(uint8_t ch_index, param_t param) {
    const uint16_t max = GET_VALUE(ch_index, param, TARGET_MAX);
 
    // If value reached min/max or wrapped
-   bool notify = false;
-   if ((value <= min) || (value >= max) || (p->step < 0 && value > previous_value) || (p->step > 0 && value < previous_value)) {
-      notify = mode_raw & TARGET_MODE_NOTIFY_BIT;
+   const bool end_reached = (value <= min) || (value >= max) || (p->step < 0 && value > previous_value) || (p->step > 0 && value < previous_value);
+   if (end_reached) {
       switch (mode) {
          case TARGET_MODE_DOWN_UP:
          case TARGET_MODE_UP_DOWN: { // Invert step direction if UP/DOWN mode
@@ -242,11 +324,17 @@ static inline void parameter_step(uint8_t ch_index, param_t param) {
 
    SET_VALUE(ch_index, param, TARGET_VALUE, value); // Update value
 
-   // if the notify bit is set, update flags and assert notify pin
-   if (notify) {
-      const uint16_t address = REG_CHnn_PARAM_FLAGS + (ch_index * 2);
-      set_state16(address, get_state16(address) | (1 << param));
-      gpio_assert(PIN_INT);
+   if (end_reached) {
+      // parameter value extent reached, run action list if specified
+      const uint16_t al = GET_VALUE(ch_index, param, TARGET_ACTION_RANGE);
+      execute_action_list(al >> 8, al & 0xff); // start:upper byte, end: lower byte
+
+      // if the notify bit is set, update flags and assert notify pin
+      if (mode_raw & TARGET_MODE_NOTIFY_BIT) {
+         const uint16_t address = REG_CHnn_PARAM_FLAGS + (ch_index * 2);
+         set_state16(address, get_state16(address) | (1 << param));
+         gpio_assert(PIN_INT);
+      }
    }
 }
 
