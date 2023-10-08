@@ -253,7 +253,7 @@ static inline void execute_action(uint8_t a_index) {
       case ACTION_EXECUTE:                              // run another action list from this list
          execute_action_list(value >> 8, value & 0xff); // start:upper byte, end: lower byte
          break;
-      case ACTION_PARAM_UPDATE: // update parameter step/rate using channel mask
+      case ACTION_PARAM_UPDATE: { // update parameter step/rate using channel mask
          const uint8_t param_target = get_state(REG_An_PARAM_TARGET + a_index);
          const param_t param = param_target >> 8;
          for (uint8_t ch_index = 0; ch_index < CHANNEL_COUNT; ch_index++) {
@@ -261,6 +261,7 @@ static inline void execute_action(uint8_t a_index) {
                parameter_update(ch_index, param);
          }
          break;
+      }
       default:
          break;
    }
