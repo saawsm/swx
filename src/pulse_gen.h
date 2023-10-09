@@ -22,18 +22,21 @@
 #include "parameter.h"
 #include "state.h"
 
+// Returns the uint16 parameter+target value for the given channel. See param_t and target_t.
 #define GET_VALUE(ch_index, param, target) get_state16(REG_CHnn_PARAM + PARAM_TARGET_INDEX((ch_index), (param), (target)))
+
+// Sets the uint16 parameter target value for the given channel. See param_t and target_t.
 #define SET_VALUE(ch_index, param, target, value) set_state16(REG_CHnn_PARAM + PARAM_TARGET_INDEX((ch_index), (param), (target)), (value))
 
 typedef struct {
-   int8_t step;
+   int8_t step; // number of steps to increment/decrement per parameter update
 
-   uint32_t next_update_time_us;
-   uint32_t update_period_us;
+   uint32_t next_update_time_us; // the next parameter step time in microseconds
+   uint32_t update_period_us;    // parameter step update period in microseconds
 } parameter_data_t;
 
 typedef struct {
-   uint8_t state_index;         // The current "waveform" state (e.g. off, on_ramp, on)
+   uint8_t state_index; // The current "waveform" state (e.g. off, on_ramp, on)
 
    uint32_t last_power_time_us; // The absolute timestamp since the last power update occurred
    uint32_t last_pulse_time_us; // The absolute timestamp since the last pulse occurred
@@ -46,8 +49,13 @@ typedef struct {
 
 void pulse_gen_init();
 
+// Update pulse generator by updating sequencer, parameters, power level transitions, and generating the actual
+// pulses manually or via audio processing depending on configured source.
 void pulse_gen_process();
 
+// Updates the parameter step period and step size based on the current target mode, minmum, maximum, and rate.
+// Should be called whenever TARGET_MODE, TARGET_MIN, TARGET_MAX, or TARGET_RATE is changed, and the parameter is
+// sweeping the value.
 void parameter_update(uint8_t ch_index, param_t param);
 
 #endif // _PULSE_GEN_H

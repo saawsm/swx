@@ -24,6 +24,7 @@
 
 #define STATE_COUNT (4)
 
+// pulse generation power fade-in/fade-out transition sequence
 static const param_t STATE_SEQUENCE[STATE_COUNT] = {
     PARAM_ON_RAMP_TIME,
     PARAM_ON_TIME,
@@ -33,7 +34,7 @@ static const param_t STATE_SEQUENCE[STATE_COUNT] = {
 
 static channel_data_t channels[CHANNEL_COUNT];
 
-static uint32_t sequencer_time_us;
+static uint32_t sequencer_time_us; // next sequencer state change time in microseconds
 
 extern void audio_process(channel_data_t* ch, uint8_t ch_index, uint16_t power);
 
@@ -211,6 +212,7 @@ static int64_t ch_gen_mask_toggle_cb(alarm_id_t id, void* user_data) {
 
 static inline void execute_action_list(uint8_t al_start, uint8_t al_end);
 
+// execute the action at the given action slot index
 static inline void execute_action(uint8_t a_index) {
    if (a_index >= MAX_ACTIONS)
       return;
@@ -244,7 +246,7 @@ static inline void execute_action(uint8_t a_index) {
                val = GET_VALUE(ch_index, param, target) - value;
             }
 
-            if (target == TARGET_VALUE) {
+            if (target == TARGET_VALUE) { // limit target value between TARGET_MIN and TARGET_MAX
                const uint16_t min = GET_VALUE(ch_index, param, TARGET_MIN);
                const uint16_t max = GET_VALUE(ch_index, param, TARGET_MAX);
 
@@ -291,11 +293,14 @@ static inline void execute_action(uint8_t a_index) {
    }
 }
 
+// execute each action between indices al_start and al_end
 static inline void execute_action_list(uint8_t al_start, uint8_t al_end) {
    for (uint8_t i = al_start; i < al_end; i++)
       execute_action(i);
 }
 
+// Update the parameter value by stepping based on the current parameter mode and step rate.
+// Handles condition/actions when parameter reaches extent based on mode.
 static inline void parameter_step(uint8_t ch_index, param_t param) {
    parameter_data_t* p = &channels[ch_index].parameters[param];
 

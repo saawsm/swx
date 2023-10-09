@@ -21,8 +21,10 @@
 #include "swx.h"
 #include "message.h"
 
+// Init I2C hardware, I2C slave, and set register defaults.
 void protocol_init();
 
+// Process any commands (REG_CMD) and synchronize hardware states. 
 void protocol_process();
 
 #endif // _PROTOCOL_H
