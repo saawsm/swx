@@ -188,6 +188,27 @@ void pulse_gen_process() {
    }
 }
 
+// alarm callback function for disabling channel pulse generation using a channel mask
+static int64_t ch_gen_mask_disable_cb(alarm_id_t id, void* user_data) {
+   const uint8_t channel_mask = (int)user_data;
+   set_state(REG_CH_GEN_ENABLE, get_state(REG_CH_GEN_ENABLE) & ~channel_mask);
+   return 0; // dont reschedule the alarm
+}
+
+// alarm callback function for enabling channel pulse generation using a channel mask
+static int64_t ch_gen_mask_enable_cb(alarm_id_t id, void* user_data) {
+   const uint8_t channel_mask = (int)user_data;
+   set_state(REG_CH_GEN_ENABLE, get_state(REG_CH_GEN_ENABLE) | channel_mask);
+   return 0; // dont reschedule the alarm
+}
+
+// alarm callback function for toggling channel pulse generation using a channel mask
+static int64_t ch_gen_mask_toggle_cb(alarm_id_t id, void* user_data) {
+   const uint8_t channel_mask = (int)user_data;
+   set_state(REG_CH_GEN_ENABLE, get_state(REG_CH_GEN_ENABLE) ^ channel_mask);
+   return 0; // dont reschedule the alarm
+}
+
 static inline void execute_action_list(uint8_t al_start, uint8_t al_end);
 
 static inline void execute_action(uint8_t a_index) {
@@ -238,17 +259,20 @@ static inline void execute_action(uint8_t a_index) {
          }
          break;
       }
-      case ACTION_ENABLE:
-         set_state(REG_CH_GEN_ENABLE,
-                   get_state(REG_CH_GEN_ENABLE) | channel_mask); // TODO: Support auto-disable channel generation using action value as delay in milliseconds
+      case ACTION_ENABLE: // enable channel generation for mask, with optional delayed disable in milliseconds
+         set_state(REG_CH_GEN_ENABLE, get_state(REG_CH_GEN_ENABLE) | channel_mask);
+         if (value > 0 && channel_mask) // add_alarm_in_ms doesn't copy user_data, so use user_data as the value instead of a pointer
+            add_alarm_in_ms(value, ch_gen_mask_disable_cb, (void*)((int)channel_mask), true);
          break;
-      case ACTION_DISABLE:
-         set_state(REG_CH_GEN_ENABLE,
-                   get_state(REG_CH_GEN_ENABLE) & ~channel_mask); // TODO: Support auto-enable channel generation using action value as delay in milliseconds
+      case ACTION_DISABLE: // disable channel generation for mask, with optional delayed enable in milliseconds
+         set_state(REG_CH_GEN_ENABLE, get_state(REG_CH_GEN_ENABLE) & ~channel_mask);
+         if (value > 0 && channel_mask) // add_alarm_in_ms doesn't copy user_data, so use user_data as the value instead of a pointer
+            add_alarm_in_ms(value, ch_gen_mask_enable_cb, (void*)((int)channel_mask), true);
          break;
-      case ACTION_TOGGLE:
-         set_state(REG_CH_GEN_ENABLE,
-                   get_state(REG_CH_GEN_ENABLE) ^ channel_mask); // TODO: Support auto-enable/disable channel generation using action value as delay in milliseconds
+      case ACTION_TOGGLE: // toggle channel generation for mask, with optional delayed toggle in milliseconds
+         set_state(REG_CH_GEN_ENABLE, get_state(REG_CH_GEN_ENABLE) ^ channel_mask);
+         if (value > 0 && channel_mask) // add_alarm_in_ms doesn't copy user_data, so use user_data as the value instead of a pointer
+            add_alarm_in_ms(value, ch_gen_mask_toggle_cb, (void*)((int)channel_mask), true);
          break;
       case ACTION_EXECUTE:                              // run another action list from this list
          execute_action_list(value >> 8, value & 0xff); // start:upper byte, end: lower byte
