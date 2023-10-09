@@ -103,13 +103,29 @@ typedef enum {
 
 typedef enum {
    ACTION_NONE = 0,
+
+   /// Set a parameter target value.
    ACTION_SET,
+
+   /// Increment a parameter target value. Action value is the amount to increment by.
    ACTION_INCREMENT,
+
+   /// Decrement a parameter target value. Action value is the amount to decrement by.
    ACTION_DECREMENT,
+
+   /// Enable pulse generation on one or more channels. If value is above zero, delay in milliseconds before disabling generation.
    ACTION_ENABLE,
+
+   /// Disable pulse generation on one or more channels. If value is above zero, delay in milliseconds before enabling generation.
    ACTION_DISABLE,
+
+   /// Toggle pulse generation on one or more channels. If value is above zero, delay in milliseconds before toggling generation again.
    ACTION_TOGGLE,
+
+   /// Run another action list. Value contains index range for list. Upper byte is start index, lower byte is end index.
    ACTION_EXECUTE,
+
+   /// Update a parameter for one or more channels.
    ACTION_PARAM_UPDATE,
 } action_type_t;
 
