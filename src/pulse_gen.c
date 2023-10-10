@@ -148,7 +148,7 @@ void pulse_gen_process() {
       }
 
       // Combine the channel power modifier with the 'state' power modifier
-      const uint16_t power_level = get_state16(REG_CHnn_POWER + (ch_index * 2));
+      const uint16_t power_level = get_state16(REG_CHn_POWER_w + (ch_index * 2));
       power_modifier *= ((float)(power_level < CHANNEL_POWER_MAX ? power_level : CHANNEL_POWER_MAX) / CHANNEL_POWER_MAX);
 
       uint16_t power = GET_VALUE(ch_index, PARAM_POWER, TARGET_VALUE);
@@ -217,18 +217,20 @@ static inline void execute_action(uint8_t a_index) {
    if (a_index >= MAX_ACTIONS)
       return;
 
-   const action_type_t type = get_state(REG_An_TYPE + a_index);
+   const uint16_t offset = ACTION_SIZE * a_index;
+
+   const action_type_t type = get_state(REG_An_TYPE + offset);
    if (type == ACTION_NONE)
       return;
 
-   const uint8_t channel_mask = get_state(REG_An_CHANNEL_MASK + a_index);
-   const uint16_t value = get_state16(REG_Ann_VALUE + (a_index * 2));
+   const uint8_t channel_mask = get_state(REG_An_CHANNEL_MASK + offset);
+   const uint16_t value = get_state16(REG_An_VALUE_w + offset);
 
    switch (type) {
       case ACTION_SET:
       case ACTION_INCREMENT:
       case ACTION_DECREMENT: { // set,increment,decrement param+target value for all channels in mask, while keeping it constrained to TARGET_MIN/MAX
-         const uint8_t param_target = get_state(REG_An_PARAM_TARGET + a_index);
+         const uint8_t param_target = get_state(REG_An_PARAM_TARGET + offset);
          const param_t param = param_target >> 8;
          const target_t target = param_target & 0xff;
 
@@ -280,7 +282,7 @@ static inline void execute_action(uint8_t a_index) {
          execute_action_list(value >> 8, value & 0xff); // start:upper byte, end: lower byte
          break;
       case ACTION_PARAM_UPDATE: { // update parameter step/rate using channel mask
-         const uint8_t param_target = get_state(REG_An_PARAM_TARGET + a_index);
+         const uint8_t param_target = get_state(REG_An_PARAM_TARGET + offset);
          const param_t param = param_target >> 8;
          for (uint8_t ch_index = 0; ch_index < CHANNEL_COUNT; ch_index++) {
             if (channel_mask & (1 << ch_index))
@@ -361,7 +363,7 @@ static inline void parameter_step(uint8_t ch_index, param_t param) {
 
       // if the notify bit is set, update flags and assert notify pin
       if (mode_raw & TARGET_MODE_NOTIFY_BIT) {
-         const uint16_t address = REG_CHnn_PARAM_FLAGS + (ch_index * 2);
+         const uint16_t address = REG_CHn_PARAM_FLAGS_w + (ch_index * 2);
          set_state16(address, get_state16(address) | (1 << param));
          gpio_assert(PIN_INT);
       }

@@ -19,7 +19,7 @@
 #define _MESSAGE_H
 
 #define READ_ONLY_ADDRESS_BOUNDARY (0x20)
-#define MAX_STATE_MEM_SIZE (0x800)
+#define MAX_STATE_MEM_SIZE (0x900)
 
 #define REG_VERSION (0)                 // bytes 0 & 1 (readonly)
 #define REG_VERSION_L (REG_VERSION)     // (readonly)
@@ -101,12 +101,15 @@
 #define REG_SEQn (94)      // max MAX_SEQ_COUNT
 
 #define MAX_ACTIONS (255) // Max supported action count is 255 since action value (uint16) must be able to fit start/end indices
+#define ACTION_SIZE (5)   // size of action entry in bytes
 
+// Action entries are stored sequentially and can be accessed using ACTION_SIZE * index + REG_An_...
 #define REG_An_TYPE (224)         // action_type_t (uint8_t)
-#define REG_An_CHANNEL_MASK (479) // action channel mask (uint8_t)
-#define REG_An_PARAM_TARGET (734) // action parameter+target (uint8_t) upper nibble is parameter, lower nibble is target
-#define REG_Ann_VALUE (989)       // action value (uint16_t)
+#define REG_An_CHANNEL_MASK (225) // action channel mask (uint8_t)
+#define REG_An_PARAM_TARGET (226) // action parameter+target (uint8_t) upper nibble is parameter, lower nibble is target
+#define REG_An_VALUE_w (227)      // action value (uint16_t)
 
-#define REG_CHnn_PARAM (1500) // Channel pulse generation parameters. see PARAM_TARGET_INDEX() for required offsets
+
+#define REG_CHn_PARAM_w (1505) // Channel pulse generation parameters. see PARAM_TARGET_INDEX() for required offsets
 
 #endif // _MESSAGE_H
