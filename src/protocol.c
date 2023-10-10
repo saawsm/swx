@@ -85,7 +85,7 @@ void protocol_init() {
    memset(mem, 0, MAX_STATE_MEM_SIZE);
 
    // set readonly info
-   set_state16(REG_VERSION, SWX_VERSION);
+   set_state16(REG_VERSION_w, SWX_VERSION);
    set_state(REG_CHANNEL_COUNT, CHANNEL_COUNT);
    set_state(REG_CH_CAL_ENABLED, CH_CAL_ENABLED);
 

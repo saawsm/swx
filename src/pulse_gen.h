@@ -23,10 +23,10 @@
 #include "state.h"
 
 // Returns the uint16 parameter+target value for the given channel. See param_t and target_t.
-#define GET_VALUE(ch_index, param, target) get_state16(REG_CHnn_PARAM + PARAM_TARGET_INDEX((ch_index), (param), (target)))
+#define GET_VALUE(ch_index, param, target) get_state16(REG_CHn_PARAM_w + PARAM_TARGET_INDEX((ch_index), (param), (target)))
 
 // Sets the uint16 parameter target value for the given channel. See param_t and target_t.
-#define SET_VALUE(ch_index, param, target, value) set_state16(REG_CHnn_PARAM + PARAM_TARGET_INDEX((ch_index), (param), (target)), (value))
+#define SET_VALUE(ch_index, param, target, value) set_state16(REG_CHn_PARAM_w + PARAM_TARGET_INDEX((ch_index), (param), (target)), (value))
 
 typedef struct {
    int8_t step; // number of steps to increment/decrement per parameter update

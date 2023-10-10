@@ -21,9 +21,7 @@
 #define READ_ONLY_ADDRESS_BOUNDARY (0x20)
 #define MAX_STATE_MEM_SIZE (0x900)
 
-#define REG_VERSION (0)                 // bytes 0 & 1 (readonly)
-#define REG_VERSION_L (REG_VERSION)     // (readonly)
-#define REG_VERSION_H (REG_VERSION + 1) // (readonly)
+#define REG_VERSION_w (0)
 
 #define REG_CHANNEL_COUNT (2)  // Number of channels (readonly)
 #define REG_CH_CAL_ENABLED (3) // (readonly)
@@ -34,11 +32,11 @@
 #define REG_CH3_STATUS (REG_CHn_STATUS + 2)
 #define REG_CH4_STATUS (REG_CHn_STATUS + 3)
 
-#define REG_CHnn_CAL_VALUE (9) // uint16_t channel cal value (readonly)
-#define REG_CH1_CAL_VALUE (REG_CHnn_CAL_VALUE + 0)
-#define REG_CH2_CAL_VALUE (REG_CHnn_CAL_VALUE + 2)
-#define REG_CH3_CAL_VALUE (REG_CHnn_CAL_VALUE + 4)
-#define REG_CH4_CAL_VALUE (REG_CHnn_CAL_VALUE + 6)
+#define REG_CHn_CAL_VALUE_w (9) // uint16_t channel cal value (readonly)
+#define REG_CH1_CAL_VALUE_w (REG_CHn_CAL_VALUE_w + 0)
+#define REG_CH2_CAL_VALUE_w (REG_CHn_CAL_VALUE_w + 2)
+#define REG_CH3_CAL_VALUE_w (REG_CHn_CAL_VALUE_w + 4)
+#define REG_CH4_CAL_VALUE_w (REG_CHn_CAL_VALUE_w + 6)
 
 // -----------------------------------------------------
 
@@ -54,18 +52,18 @@
 #define REG_CH4_GEN_ENABLE_BIT (3)
 #define REG_CH4_GEN_ENABLE_MASK (1 << REG_CH4_GEN_ENABLE_BIT)
 
-#define REG_CHnn_POWER (34) // uint16_t channel power level (scaled with PARAM_POWER)
-#define REG_CH1_POWER (REG_CHnn_POWER + 0)
-#define REG_CH2_POWER (REG_CHnn_POWER + 2)
-#define REG_CH3_POWER (REG_CHnn_POWER + 4)
-#define REG_CH4_POWER (REG_CHnn_POWER + 6)
+#define REG_CHn_POWER_w (34) // uint16_t channel power level (scaled with PARAM_POWER)
+#define REG_CH1_POWER_w (REG_CHn_POWER_w + 0)
+#define REG_CH2_POWER_w (REG_CHn_POWER_w + 2)
+#define REG_CH3_POWER_w (REG_CHn_POWER_w + 4)
+#define REG_CH4_POWER_w (REG_CHn_POWER_w + 6)
 
 // Status flags for when the param value has reached an extent (min/max). Flag bits should be reset when acknowledged.
-#define REG_CHnn_PARAM_FLAGS (50)
-#define REG_CH1_PARAM_FLAGS (REG_CHnn_PARAM_FLAGS + 0)
-#define REG_CH2_PARAM_FLAGS (REG_CHnn_PARAM_FLAGS + 2)
-#define REG_CH3_PARAM_FLAGS (REG_CHnn_PARAM_FLAGS + 4)
-#define REG_CH4_PARAM_FLAGS (REG_CHnn_PARAM_FLAGS + 6)
+#define REG_CHn_PARAM_FLAGS_w (50)
+#define REG_CH1_PARAM_FLAGS_w (REG_CHn_PARAM_FLAGS_w + 0)
+#define REG_CH2_PARAM_FLAGS_w (REG_CHn_PARAM_FLAGS_w + 2)
+#define REG_CH3_PARAM_FLAGS_w (REG_CHn_PARAM_FLAGS_w + 4)
+#define REG_CH4_PARAM_FLAGS_w (REG_CHn_PARAM_FLAGS_w + 6)
 
 #define REG_CHn_AUDIO_SRC (66) // Channel audio source, override default pulse_gen. see analog_channel_t
 #define REG_CH1_AUDIO_SRC (REG_CHn_AUDIO_SRC + 0)

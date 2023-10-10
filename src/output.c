@@ -218,7 +218,7 @@ bool output_calibrate_all() {
       }
 
       const uint16_t ch_status = REG_CHn_STATUS + ch_index;
-      const uint16_t ch_cal_value = REG_CHnn_CAL_VALUE + (ch_index * 2);
+      const uint16_t ch_cal_value = REG_CHn_CAL_VALUE_w + (ch_index * 2);
 
       if (get_state(ch_status) == CHANNEL_INVALID) { // This should not happen...
          success = false;
@@ -358,7 +358,7 @@ void output_process_power() {
       if (cmd.power > CHANNEL_POWER_MAX)
          cmd.power = CHANNEL_POWER_MAX;
 
-      const uint16_t cal_value = get_state16(REG_CHnn_CAL_VALUE + (cmd.channel * 2));
+      const uint16_t cal_value = get_state16(REG_CHn_CAL_VALUE_w + (cmd.channel * 2));
       int16_t dacValue = (cal_value + ch->cal_offset) - (cmd.power * 2);
 
       if (dacValue < 0 || dacValue > DAC_MAX_VALUE) {
