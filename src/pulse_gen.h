@@ -58,4 +58,7 @@ void pulse_gen_process();
 // sweeping the value.
 void parameter_update(uint8_t ch_index, param_t param);
 
+// execute each action between indices al_start and al_end
+void execute_action_list(uint8_t al_start, uint8_t al_end);
+
 #endif // _PULSE_GEN_H

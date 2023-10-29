@@ -26,6 +26,7 @@
 #include "protocol.h"
 #include "analog_capture.h"
 #include "pulse_gen.h"
+#include "trigger.h"
 
 #include "util/i2c.h"
 #include "util/gpio.h"
@@ -93,6 +94,8 @@ int main() {
    multicore_launch_core1(core1_entry);
 
    pulse_gen_init();
+   
+   triggers_init();
 
    LOG_DEBUG("Starting core0 loop...\n");
 
@@ -105,6 +108,7 @@ int main() {
 
       pulse_gen_process();
       output_process_pulses();
+      triggers_process();
    }
 
    // Code execution shouldn't get this far...

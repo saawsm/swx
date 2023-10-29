@@ -38,7 +38,7 @@
 #define REG_CH3_CAL_VALUE_w (REG_CHn_CAL_VALUE_w + 4)
 #define REG_CH4_CAL_VALUE_w (REG_CHn_CAL_VALUE_w + 6)
 
-// -----------------------------------------------------
+// ------------------------ READONLY BOUNDARY END ----------------------------- 
 
 #define REG_PSU_ENABLE (32) // Enable/disable PSU
 
@@ -107,7 +107,14 @@
 #define REG_An_PARAM_TARGET (226) // action parameter+target (uint8_t) upper nibble is parameter, lower nibble is target
 #define REG_An_VALUE_w (227)      // action value (uint16_t)
 
+#define MAX_TRIGS (32)
+#define TRIG_SIZE (4) // size of trig entry in bytes
 
-#define REG_CHn_PARAM_w (1505) // Channel pulse generation parameters. see PARAM_TARGET_INDEX() for required offsets
+// Trig entries are stored sequentially and can be accessed using TRIG_SIZE * index + REG_TRIGn_...
+#define REG_TRIGn_INPUT (1505)    // uint8_t, upper nibble: trigger_mask, lower nibble: trigger_invert_mask
+#define REG_TRIGn_OUTPUT (1506)   // uint8_t, upper nibble: trigger_op_t, lower nibble: output_invert (bool)
+#define REG_TRIGn_ACTION_w (1507) // uint16_t, upper byte: action_start_index, lower byte: action_end_index
+
+#define REG_CHn_PARAM_w (1637) // Channel pulse generation parameters. see PARAM_TARGET_INDEX() for required offsets
 
 #endif // _MESSAGE_H

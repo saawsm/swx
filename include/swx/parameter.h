@@ -129,6 +129,18 @@ typedef enum {
    ACTION_PARAM_UPDATE,
 } action_type_t;
 
+typedef enum {
+   TRIGGER_OP_DDD = 0, // disabled
+   TRIGGER_OP_OOO, // t1 || t2 || t3 || t4
+   TRIGGER_OP_OOA, // t1 || t2 || t3 && t4
+   TRIGGER_OP_OAO, // t1 || t2 && t3 || t4
+   TRIGGER_OP_OAA, // t1 || t2 && t3 && t4
+   TRIGGER_OP_AOO, // t1 && t2 || t3 || t4
+   TRIGGER_OP_AOA, // t1 && t2 || t3 && t4
+   TRIGGER_OP_AAO, // t1 && t2 && t3 || t4
+   TRIGGER_OP_AAA, // t1 && t2 && t3 && t4
+} trigger_op_t;
+
 #define PARAM_TARGET_INDEX_OFFSET(param, target) ((((param)*2) * TOTAL_TARGETS) + ((target)*2))
 #define PARAM_TARGET_INDEX_TOTAL (PARAM_TARGET_INDEX_OFFSET(TOTAL_PARAMS - 1, TOTAL_TARGETS - 1))
 

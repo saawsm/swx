@@ -191,6 +191,7 @@ void pulse_gen_process() {
 
 // alarm callback function for disabling channel pulse generation using a channel mask
 static int64_t ch_gen_mask_disable_cb(alarm_id_t id, void* user_data) {
+   (void) id;
    const uint8_t channel_mask = (int)user_data;
    set_state(REG_CH_GEN_ENABLE, get_state(REG_CH_GEN_ENABLE) & ~channel_mask);
    return 0; // dont reschedule the alarm
@@ -198,6 +199,7 @@ static int64_t ch_gen_mask_disable_cb(alarm_id_t id, void* user_data) {
 
 // alarm callback function for enabling channel pulse generation using a channel mask
 static int64_t ch_gen_mask_enable_cb(alarm_id_t id, void* user_data) {
+   (void) id;   
    const uint8_t channel_mask = (int)user_data;
    set_state(REG_CH_GEN_ENABLE, get_state(REG_CH_GEN_ENABLE) | channel_mask);
    return 0; // dont reschedule the alarm
@@ -205,12 +207,11 @@ static int64_t ch_gen_mask_enable_cb(alarm_id_t id, void* user_data) {
 
 // alarm callback function for toggling channel pulse generation using a channel mask
 static int64_t ch_gen_mask_toggle_cb(alarm_id_t id, void* user_data) {
+   (void) id;
    const uint8_t channel_mask = (int)user_data;
    set_state(REG_CH_GEN_ENABLE, get_state(REG_CH_GEN_ENABLE) ^ channel_mask);
    return 0; // dont reschedule the alarm
 }
-
-static inline void execute_action_list(uint8_t al_start, uint8_t al_end);
 
 // execute the action at the given action slot index
 static inline void execute_action(uint8_t a_index) {
@@ -295,8 +296,7 @@ static inline void execute_action(uint8_t a_index) {
    }
 }
 
-// execute each action between indices al_start and al_end
-static inline void execute_action_list(uint8_t al_start, uint8_t al_end) {
+void execute_action_list(uint8_t al_start, uint8_t al_end) {
    for (uint8_t i = al_start; i < al_end; i++)
       execute_action(i);
 }

@@ -20,6 +20,13 @@
 #define PIN_I2S_WS (21)
 #define PIN_I2S_SD (22)
 
+// Triggers are unavailable for the SW22 board
+#define TRIGGER_COUNT (0)
+//#define PIN_TRIGGER1 (14)
+//#define PIN_TRIGGER2 (15)
+//#define PIN_TRIGGER3 (16)
+//#define PIN_TRIGGER4 (17)
+
 // -------- I2C --------
 
 // Port used for communications with controller (I2C slave mode).
