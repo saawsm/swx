@@ -26,6 +26,7 @@
 #include "protocol.h"
 #include "analog_capture.h"
 #include "pulse_gen.h"
+#include "trigger.h"
 
 #include "util/i2c.h"
 #include "util/gpio.h"
@@ -49,8 +50,9 @@ static void init() {
    stdio_init_all();                                    // needs to be called after setting clock
 
    LOG_INFO("~~ swx driver %u ~~\nStarting up...\n", SWX_VERSION);
-   if (clk_success)
+   if (clk_success) {
       LOG_DEBUG("sys_clk set to 250MHz\n");
+   }
 
    // Setup I2C as slave for comms with control device.
    protocol_init();
@@ -92,6 +94,8 @@ int main() {
    multicore_launch_core1(core1_entry);
 
    pulse_gen_init();
+   
+   triggers_init();
 
    LOG_DEBUG("Starting core0 loop...\n");
 
@@ -104,6 +108,7 @@ int main() {
 
       pulse_gen_process();
       output_process_pulses();
+      triggers_process();
    }
 
    // Code execution shouldn't get this far...

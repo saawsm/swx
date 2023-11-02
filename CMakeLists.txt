@@ -47,6 +47,7 @@ else() # configure as swx driver firmware using pico-sdk
             "src/protocol.c"
             "src/audio.c"
             "src/analog_capture.c"
+            "src/trigger.c"
             "src/util/i2c.c"        
             "src/hardware/mcp4728.c"
             "src/hardware/ads1015.c"

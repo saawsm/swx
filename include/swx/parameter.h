@@ -68,6 +68,10 @@ typedef enum {
    /// The cycling mode the parameter is using. Determines how the value resets when it reaches min/max.
    TARGET_MODE,
 
+   /// Execute actions between start/end indices when value reaches min/max. Lower byte contains end index, upper byte contains start index.
+   /// Disable by setting upper and lower bytes equal
+   TARGET_ACTION_RANGE,
+
    TOTAL_TARGETS // Number of targets in enum, used for arrays
 
 } target_t;
@@ -97,6 +101,46 @@ typedef enum {
 
 } target_mode_t;
 
+typedef enum {
+   ACTION_NONE = 0,
+
+   /// Set a parameter target value.
+   ACTION_SET,
+
+   /// Increment a parameter target value. Action value is the amount to increment by.
+   ACTION_INCREMENT,
+
+   /// Decrement a parameter target value. Action value is the amount to decrement by.
+   ACTION_DECREMENT,
+
+   /// Enable pulse generation on one or more channels. If value is above zero, delay in milliseconds before disabling generation.
+   ACTION_ENABLE,
+
+   /// Disable pulse generation on one or more channels. If value is above zero, delay in milliseconds before enabling generation.
+   ACTION_DISABLE,
+
+   /// Toggle pulse generation on one or more channels. If value is above zero, delay in milliseconds before toggling generation again.
+   ACTION_TOGGLE,
+
+   /// Run another action list. Value contains index range for list. Upper byte is start index, lower byte is end index.
+   ACTION_EXECUTE,
+
+   /// Update a parameter for one or more channels.
+   ACTION_PARAM_UPDATE,
+} action_type_t;
+
+typedef enum {
+   TRIGGER_OP_DDD = 0, // disabled
+   TRIGGER_OP_OOO, // t1 || t2 || t3 || t4
+   TRIGGER_OP_OOA, // t1 || t2 || t3 && t4
+   TRIGGER_OP_OAO, // t1 || t2 && t3 || t4
+   TRIGGER_OP_OAA, // t1 || t2 && t3 && t4
+   TRIGGER_OP_AOO, // t1 && t2 || t3 || t4
+   TRIGGER_OP_AOA, // t1 && t2 || t3 && t4
+   TRIGGER_OP_AAO, // t1 && t2 && t3 || t4
+   TRIGGER_OP_AAA, // t1 && t2 && t3 && t4
+} trigger_op_t;
+
 #define PARAM_TARGET_INDEX_OFFSET(param, target) ((((param)*2) * TOTAL_TARGETS) + ((target)*2))
 #define PARAM_TARGET_INDEX_TOTAL (PARAM_TARGET_INDEX_OFFSET(TOTAL_PARAMS - 1, TOTAL_TARGETS - 1))
 
@@ -105,6 +149,6 @@ typedef enum {
 #define PARAM_TARGET_INDEX(ch_index, param, target) (((ch_index)*PARAM_TARGET_INDEX_TOTAL) + PARAM_TARGET_INDEX_OFFSET(param, target) + ((ch_index)*2))
 
 // Array size in bytes for all parameter target indices
-#define PARAM_TARGET_INDEX_MAX(channel_count) (PARAM_TARGET_INDEX((channel_count) - 1, TOTAL_PARAMS - 1, TOTAL_TARGETS - 1) + 2)
+#define PARAM_TARGET_INDEX_MAX(channel_count) (PARAM_TARGET_INDEX((channel_count)-1, TOTAL_PARAMS - 1, TOTAL_TARGETS - 1) + 2)
 
 #endif // _PARAMETER_H

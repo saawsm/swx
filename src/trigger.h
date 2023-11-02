@@ -15,16 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef _PROTOCOL_H
-#define _PROTOCOL_H
+#ifndef _TRIGGER_H
+#define _TRIGGER_H
 
 #include "swx.h"
-#include "message.h"
 
-// Init I2C hardware, I2C slave, and set register defaults.
-void protocol_init();
+void triggers_init();
 
-// Process any commands (REG_CMD) and synchronize hardware states. 
-void protocol_process();
+void triggers_process();
 
-#endif // _PROTOCOL_H
+#endif // _TRIGGER_H

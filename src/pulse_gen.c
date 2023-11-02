@@ -24,14 +24,17 @@
 
 #define STATE_COUNT (4)
 
+// pulse generation power fade-in/fade-out transition sequence
 static const param_t STATE_SEQUENCE[STATE_COUNT] = {
-    PARAM_OFF_TIME,
     PARAM_ON_RAMP_TIME,
     PARAM_ON_TIME,
     PARAM_OFF_RAMP_TIME,
+    PARAM_OFF_TIME,
 };
 
 static channel_data_t channels[CHANNEL_COUNT];
+
+static uint32_t sequencer_time_us; // next sequencer state change time in microseconds
 
 extern void audio_process(channel_data_t* ch, uint8_t ch_index, uint16_t power);
 
@@ -40,18 +43,20 @@ static inline void parameter_step(uint8_t ch_index, param_t param);
 void pulse_gen_init() {
    LOG_DEBUG("Init pulse generator...\n");
 
+   sequencer_time_us = 0;
+
    // Set default parameter values
    for (uint8_t ch_index = 0; ch_index < CHANNEL_COUNT; ch_index++) {
       channels[ch_index].state_index = 0;
 
-      SET_VALUE(ch_index, PARAM_POWER, TARGET_MAX, 1000);         // 100%
-      SET_VALUE(ch_index, PARAM_POWER, TARGET_VALUE, 1000);       // 100%
+      SET_VALUE(ch_index, PARAM_POWER, TARGET_MAX, 1000);   // 100%
+      SET_VALUE(ch_index, PARAM_POWER, TARGET_VALUE, 1000); // 100%
 
-      SET_VALUE(ch_index, PARAM_FREQUENCY, TARGET_MAX, 5000);     // max. 500 Hz (soft limit - only auto cycling)
-      SET_VALUE(ch_index, PARAM_FREQUENCY, TARGET_VALUE, 1800);   // 180 Hz
+      SET_VALUE(ch_index, PARAM_FREQUENCY, TARGET_MAX, 5000);   // max. 500 Hz (soft limit - only auto cycling)
+      SET_VALUE(ch_index, PARAM_FREQUENCY, TARGET_VALUE, 1800); // 180 Hz
 
-      SET_VALUE(ch_index, PARAM_PULSE_WIDTH, TARGET_MAX, 500);    // max. 500 us
-      SET_VALUE(ch_index, PARAM_PULSE_WIDTH, TARGET_VALUE, 150);  // 150 us
+      SET_VALUE(ch_index, PARAM_PULSE_WIDTH, TARGET_MAX, 500);   // max. 500 us
+      SET_VALUE(ch_index, PARAM_PULSE_WIDTH, TARGET_VALUE, 150); // 150 us
 
       SET_VALUE(ch_index, PARAM_ON_TIME, TARGET_MAX, 10000);      // 10 seconds
       SET_VALUE(ch_index, PARAM_ON_RAMP_TIME, TARGET_MAX, 5000);  // 5 seconds
@@ -61,13 +66,42 @@ void pulse_gen_init() {
 }
 
 void pulse_gen_process() {
-   const uint8_t en = get_state(REG_CH_GEN_ENABLE);
+   // update sequencer and active sequence mask
+   const uint16_t seq_period_ms = get_state16(REG_SEQ_PERIOD);
+   const uint8_t seq_count = get_state(REG_SEQ_COUNT);
+
+   uint8_t sequencer_mask;
+   if (seq_period_ms == 0 || seq_count == 0) {
+      sequencer_mask = 0xff; // if sequencer is disabled, make mask all enabled
+   } else {
+
+      uint8_t sequencer_index = get_state(REG_SEQ_INDEX);
+      if (sequencer_index >= MAX_SEQ_COUNT)
+         sequencer_index = MAX_SEQ_COUNT - 1;
+
+      uint32_t time = time_us_32();
+      if (time > sequencer_time_us) {
+         if (++sequencer_index >= seq_count || sequencer_index >= MAX_SEQ_COUNT)
+            sequencer_index = 0; // Increment or reset after REG_SEQ_COUNT
+
+         set_state(REG_SEQ_INDEX, sequencer_index);
+
+         // Set the next sequencer time based on the REG_SEQ_PERIOD
+         sequencer_time_us = time + (seq_period_ms * 1000);
+      }
+
+      sequencer_mask = get_state(REG_SEQn + sequencer_index);
+   }
+
+   // currently enabled channel mask based on REG_CH_GEN_ENABLE and current sequencer slot item
+   const uint8_t en = get_state(REG_CH_GEN_ENABLE) & sequencer_mask;
 
    for (uint8_t ch_index = 0; ch_index < CHANNEL_COUNT; ch_index++) {
       channel_data_t* ch = &channels[ch_index];
 
-      if (!(en & (1 << ch_index))) { // when disabled, wait in off state
+      if (!(en & (1 << ch_index))) { // when disabled, hold state at zero
          ch->state_index = 0;
+         ch->next_state_time_us = time_us_32() + (GET_VALUE(ch_index, STATE_SEQUENCE[ch->state_index], TARGET_VALUE) * 1000);
          continue;
       }
 
@@ -78,9 +112,9 @@ void pulse_gen_process() {
       uint32_t time = time_us_32();
       if (time > ch->next_state_time_us) {
          if (++ch->state_index >= STATE_COUNT)
-            ch->state_index = 0; // Increment or reset after 4 states (off, on_ramp, on, off_ramp)
+            ch->state_index = 0; // Increment or reset after 4 states (on_ramp, on, off_ramp, off)
 
-         // Set the next state time based on the state parameter (off_time, on_ramp_time, on_time, off_ramp_time)
+         // Set the next state time based on the state parameter (on_ramp_time, on_time, off_ramp_time, off_time)
          ch->next_state_time_us = time + (GET_VALUE(ch_index, STATE_SEQUENCE[ch->state_index], TARGET_VALUE) * 1000);
       }
 
@@ -114,7 +148,7 @@ void pulse_gen_process() {
       }
 
       // Combine the channel power modifier with the 'state' power modifier
-      const uint16_t power_level = get_state16(REG_CHnn_POWER + (ch_index * 2));
+      const uint16_t power_level = get_state16(REG_CHn_POWER_w + (ch_index * 2));
       power_modifier *= ((float)(power_level < CHANNEL_POWER_MAX ? power_level : CHANNEL_POWER_MAX) / CHANNEL_POWER_MAX);
 
       uint16_t power = GET_VALUE(ch_index, PARAM_POWER, TARGET_VALUE);
@@ -148,13 +182,127 @@ void pulse_gen_process() {
 
             ch->next_pulse_time_us = time + (10000000ul / frequency); // dHz -> us
 
-            // Pulse the channnel
+            // Pulse the channel
             output_pulse(ch_index, pulse_width, pulse_width, time_us_32());
          }
       }
    }
 }
 
+// alarm callback function for disabling channel pulse generation using a channel mask
+static int64_t ch_gen_mask_disable_cb(alarm_id_t id, void* user_data) {
+   (void) id;
+   const uint8_t channel_mask = (int)user_data;
+   set_state(REG_CH_GEN_ENABLE, get_state(REG_CH_GEN_ENABLE) & ~channel_mask);
+   return 0; // dont reschedule the alarm
+}
+
+// alarm callback function for enabling channel pulse generation using a channel mask
+static int64_t ch_gen_mask_enable_cb(alarm_id_t id, void* user_data) {
+   (void) id;   
+   const uint8_t channel_mask = (int)user_data;
+   set_state(REG_CH_GEN_ENABLE, get_state(REG_CH_GEN_ENABLE) | channel_mask);
+   return 0; // dont reschedule the alarm
+}
+
+// alarm callback function for toggling channel pulse generation using a channel mask
+static int64_t ch_gen_mask_toggle_cb(alarm_id_t id, void* user_data) {
+   (void) id;
+   const uint8_t channel_mask = (int)user_data;
+   set_state(REG_CH_GEN_ENABLE, get_state(REG_CH_GEN_ENABLE) ^ channel_mask);
+   return 0; // dont reschedule the alarm
+}
+
+// execute the action at the given action slot index
+static inline void execute_action(uint8_t a_index) {
+   if (a_index >= MAX_ACTIONS)
+      return;
+
+   const uint16_t offset = ACTION_SIZE * a_index;
+
+   const action_type_t type = get_state(REG_An_TYPE + offset);
+   if (type == ACTION_NONE)
+      return;
+
+   const uint8_t channel_mask = get_state(REG_An_CHANNEL_MASK + offset);
+   const uint16_t value = get_state16(REG_An_VALUE_w + offset);
+
+   switch (type) {
+      case ACTION_SET:
+      case ACTION_INCREMENT:
+      case ACTION_DECREMENT: { // set,increment,decrement param+target value for all channels in mask, while keeping it constrained to TARGET_MIN/MAX
+         const uint8_t param_target = get_state(REG_An_PARAM_TARGET + offset);
+         const param_t param = param_target >> 8;
+         const target_t target = param_target & 0xff;
+
+         if (param >= TOTAL_PARAMS || target >= TOTAL_TARGETS)
+            return;
+
+         uint16_t val = value;
+         for (uint8_t ch_index = 0; ch_index < CHANNEL_COUNT; ch_index++) {
+            if (~channel_mask & (1 << ch_index))
+               continue;
+
+            if (type == ACTION_INCREMENT) {
+               val = GET_VALUE(ch_index, param, target) + value;
+            } else if (type == ACTION_DECREMENT) {
+               val = GET_VALUE(ch_index, param, target) - value;
+            }
+
+            if (target == TARGET_VALUE) { // limit target value between TARGET_MIN and TARGET_MAX
+               const uint16_t min = GET_VALUE(ch_index, param, TARGET_MIN);
+               const uint16_t max = GET_VALUE(ch_index, param, TARGET_MAX);
+
+               if (val > max) {
+                  val = max;
+               } else if (val < min) {
+                  val = min;
+               }
+            }
+
+            SET_VALUE(ch_index, param, target, val);
+         }
+         break;
+      }
+      case ACTION_ENABLE: // enable channel generation for mask, with optional delayed disable in milliseconds
+         set_state(REG_CH_GEN_ENABLE, get_state(REG_CH_GEN_ENABLE) | channel_mask);
+         if (value > 0 && channel_mask) // add_alarm_in_ms doesn't copy user_data, so use user_data as the value instead of a pointer
+            add_alarm_in_ms(value, ch_gen_mask_disable_cb, (void*)((int)channel_mask), true);
+         break;
+      case ACTION_DISABLE: // disable channel generation for mask, with optional delayed enable in milliseconds
+         set_state(REG_CH_GEN_ENABLE, get_state(REG_CH_GEN_ENABLE) & ~channel_mask);
+         if (value > 0 && channel_mask) // add_alarm_in_ms doesn't copy user_data, so use user_data as the value instead of a pointer
+            add_alarm_in_ms(value, ch_gen_mask_enable_cb, (void*)((int)channel_mask), true);
+         break;
+      case ACTION_TOGGLE: // toggle channel generation for mask, with optional delayed toggle in milliseconds
+         set_state(REG_CH_GEN_ENABLE, get_state(REG_CH_GEN_ENABLE) ^ channel_mask);
+         if (value > 0 && channel_mask) // add_alarm_in_ms doesn't copy user_data, so use user_data as the value instead of a pointer
+            add_alarm_in_ms(value, ch_gen_mask_toggle_cb, (void*)((int)channel_mask), true);
+         break;
+      case ACTION_EXECUTE:                              // run another action list from this list
+         execute_action_list(value >> 8, value & 0xff); // start:upper byte, end: lower byte
+         break;
+      case ACTION_PARAM_UPDATE: { // update parameter step/rate using channel mask
+         const uint8_t param_target = get_state(REG_An_PARAM_TARGET + offset);
+         const param_t param = param_target >> 8;
+         for (uint8_t ch_index = 0; ch_index < CHANNEL_COUNT; ch_index++) {
+            if (channel_mask & (1 << ch_index))
+               parameter_update(ch_index, param);
+         }
+         break;
+      }
+      default:
+         break;
+   }
+}
+
+void execute_action_list(uint8_t al_start, uint8_t al_end) {
+   for (uint8_t i = al_start; i < al_end; i++)
+      execute_action(i);
+}
+
+// Update the parameter value by stepping based on the current parameter mode and step rate.
+// Handles condition/actions when parameter reaches extent based on mode.
 static inline void parameter_step(uint8_t ch_index, param_t param) {
    parameter_data_t* p = &channels[ch_index].parameters[param];
 
@@ -178,9 +326,8 @@ static inline void parameter_step(uint8_t ch_index, param_t param) {
    const uint16_t max = GET_VALUE(ch_index, param, TARGET_MAX);
 
    // If value reached min/max or wrapped
-   bool notify = false;
-   if ((value <= min) || (value >= max) || (p->step < 0 && value > previous_value) || (p->step > 0 && value < previous_value)) {
-      notify = mode_raw & TARGET_MODE_NOTIFY_BIT;
+   const bool end_reached = (value <= min) || (value >= max) || (p->step < 0 && value > previous_value) || (p->step > 0 && value < previous_value);
+   if (end_reached) {
       switch (mode) {
          case TARGET_MODE_DOWN_UP:
          case TARGET_MODE_UP_DOWN: { // Invert step direction if UP/DOWN mode
@@ -209,11 +356,17 @@ static inline void parameter_step(uint8_t ch_index, param_t param) {
 
    SET_VALUE(ch_index, param, TARGET_VALUE, value); // Update value
 
-   // if the notify bit is set, update flags and assert notify pin
-   if (notify) {
-      const uint16_t address = REG_CHnn_PARAM_FLAGS + (ch_index * 2);
-      set_state16(address, get_state16(address) | (1 << param));
-      gpio_assert(PIN_INT);
+   if (end_reached) {
+      // parameter value extent reached, run action list if specified
+      const uint16_t al = GET_VALUE(ch_index, param, TARGET_ACTION_RANGE);
+      execute_action_list(al >> 8, al & 0xff); // start:upper byte, end: lower byte
+
+      // if the notify bit is set, update flags and assert notify pin
+      if (mode_raw & TARGET_MODE_NOTIFY_BIT) {
+         const uint16_t address = REG_CHn_PARAM_FLAGS_w + (ch_index * 2);
+         set_state16(address, get_state16(address) | (1 << param));
+         gpio_assert(PIN_INT);
+      }
    }
 }
 

@@ -23,12 +23,12 @@
 
 #include <pico/i2c_slave.h>
 
-uint8_t mem[MAX_STATE_MEM_SIZE];
-static volatile bool dirty = false;
+uint8_t mem[MAX_STATE_MEM_SIZE];    // I2C master accessible state memory
+static volatile bool dirty = false; // set true when I2C master sent a STOP or RESTART, set false when processed.
 
 static struct {
-   uint16_t address;
-   uint8_t ready;
+   uint16_t address; // the current memory address I2C is writing/reading at.
+   uint8_t ready;    // determines what part of the address is being written. 0: lower byte, 1: upper byte, 2: ready
 } ctx;
 
 #define CHECK_BOUNDS(n)                                                                                                                                                  \
@@ -85,7 +85,7 @@ void protocol_init() {
    memset(mem, 0, MAX_STATE_MEM_SIZE);
 
    // set readonly info
-   set_state16(REG_VERSION, SWX_VERSION);
+   set_state16(REG_VERSION_w, SWX_VERSION);
    set_state(REG_CHANNEL_COUNT, CHANNEL_COUNT);
    set_state(REG_CH_CAL_ENABLED, CH_CAL_ENABLED);
 
@@ -96,9 +96,8 @@ void protocol_init() {
    i2c_slave_init(I2C_PORT_COMMS, I2C_ADDRESS_COMMS, i2c_slave_handler);
 }
 
-
 void protocol_process() {
-   if (!dirty) // master has signalled Stop / Restart
+   if (!dirty)
       return;
    dirty = false;
 
@@ -108,10 +107,10 @@ void protocol_process() {
    // run requested cmd
    const uint8_t state = get_state(REG_CMD);
    if (state) {
-      set_state(REG_CMD, 0);
-
       const uint8_t ch_index = (state & REG_CMD_CH_MASK) >> REG_CMD_CH_BIT;
       const uint16_t arg0 = get_state16(REG_CMD + 1);
+
+      set_state(REG_CMD, 0); // clear CMD, so I2C master can set another
 
       switch ((state & REG_CMD_ACTION_MASK) >> REG_CMD_ACTION_BIT) {
          case CMD_PULSE:

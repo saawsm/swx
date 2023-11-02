@@ -19,30 +19,28 @@
 #define _MESSAGE_H
 
 #define READ_ONLY_ADDRESS_BOUNDARY (0x20)
-#define MAX_STATE_MEM_SIZE (0x350)
+#define MAX_STATE_MEM_SIZE (0x900)
 
-#define REG_VERSION (0)                 // bytes 0 & 1 (readonly)
-#define REG_VERSION_L (REG_VERSION)     // (readonly)
-#define REG_VERSION_H (REG_VERSION + 1) // (readonly)
+#define REG_VERSION_w (0)
 
-#define REG_CHANNEL_COUNT (2)           // Number of channels (readonly)
-#define REG_CH_CAL_ENABLED (3)          // (readonly)
+#define REG_CHANNEL_COUNT (2)  // Number of channels (readonly)
+#define REG_CH_CAL_ENABLED (3) // (readonly)
 
-#define REG_CHn_STATUS (5)              // channel_status_t (readonly)
+#define REG_CHn_STATUS (5) // channel_status_t (readonly)
 #define REG_CH1_STATUS (REG_CHn_STATUS + 0)
 #define REG_CH2_STATUS (REG_CHn_STATUS + 1)
 #define REG_CH3_STATUS (REG_CHn_STATUS + 2)
 #define REG_CH4_STATUS (REG_CHn_STATUS + 3)
 
-#define REG_CHnn_CAL_VALUE (9) // uint16_t channel cal value (readonly)
-#define REG_CH1_CAL_VALUE (REG_CHnn_CAL_VALUE + 0)
-#define REG_CH2_CAL_VALUE (REG_CHnn_CAL_VALUE + 2)
-#define REG_CH3_CAL_VALUE (REG_CHnn_CAL_VALUE + 4)
-#define REG_CH4_CAL_VALUE (REG_CHnn_CAL_VALUE + 6)
+#define REG_CHn_CAL_VALUE_w (9) // uint16_t channel cal value (readonly)
+#define REG_CH1_CAL_VALUE_w (REG_CHn_CAL_VALUE_w + 0)
+#define REG_CH2_CAL_VALUE_w (REG_CHn_CAL_VALUE_w + 2)
+#define REG_CH3_CAL_VALUE_w (REG_CHn_CAL_VALUE_w + 4)
+#define REG_CH4_CAL_VALUE_w (REG_CHn_CAL_VALUE_w + 6)
 
-// -----------------------------------------------------
+// ------------------------ READONLY BOUNDARY END ----------------------------- 
 
-#define REG_PSU_ENABLE (32)    // Enable/disable PSU
+#define REG_PSU_ENABLE (32) // Enable/disable PSU
 
 #define REG_CH_GEN_ENABLE (33) // Channel pulse_gen enabled
 #define REG_CH1_GEN_ENABLE_BIT (0)
@@ -54,18 +52,18 @@
 #define REG_CH4_GEN_ENABLE_BIT (3)
 #define REG_CH4_GEN_ENABLE_MASK (1 << REG_CH4_GEN_ENABLE_BIT)
 
-#define REG_CHnn_POWER (34) // uint16_t channel power level (scaled with PARAM_POWER)
-#define REG_CH1_POWER (REG_CHnn_POWER + 0)
-#define REG_CH2_POWER (REG_CHnn_POWER + 2)
-#define REG_CH3_POWER (REG_CHnn_POWER + 4)
-#define REG_CH4_POWER (REG_CHnn_POWER + 6)
+#define REG_CHn_POWER_w (34) // uint16_t channel power level (scaled with PARAM_POWER)
+#define REG_CH1_POWER_w (REG_CHn_POWER_w + 0)
+#define REG_CH2_POWER_w (REG_CHn_POWER_w + 2)
+#define REG_CH3_POWER_w (REG_CHn_POWER_w + 4)
+#define REG_CH4_POWER_w (REG_CHn_POWER_w + 6)
 
 // Status flags for when the param value has reached an extent (min/max). Flag bits should be reset when acknowledged.
-#define REG_CHnn_PARAM_FLAGS (50)
-#define REG_CH1_PARAM_FLAGS (REG_CHnn_PARAM_FLAGS + 0)
-#define REG_CH2_PARAM_FLAGS (REG_CHnn_PARAM_FLAGS + 2)
-#define REG_CH3_PARAM_FLAGS (REG_CHnn_PARAM_FLAGS + 4)
-#define REG_CH4_PARAM_FLAGS (REG_CHnn_PARAM_FLAGS + 6)
+#define REG_CHn_PARAM_FLAGS_w (50)
+#define REG_CH1_PARAM_FLAGS_w (REG_CHn_PARAM_FLAGS_w + 0)
+#define REG_CH2_PARAM_FLAGS_w (REG_CHn_PARAM_FLAGS_w + 2)
+#define REG_CH3_PARAM_FLAGS_w (REG_CHn_PARAM_FLAGS_w + 4)
+#define REG_CH4_PARAM_FLAGS_w (REG_CHn_PARAM_FLAGS_w + 6)
 
 #define REG_CHn_AUDIO_SRC (66) // Channel audio source, override default pulse_gen. see analog_channel_t
 #define REG_CH1_AUDIO_SRC (REG_CHn_AUDIO_SRC + 0)
@@ -93,6 +91,30 @@
 // TODO: Audio input Read
 // TODO: Fetch cal value (points)
 
-#define REG_CHnn_PARAM (128) // Channel pulse generation parameters. see PARAM_TARGET_INDEX() for required offsets
+#define MAX_SEQ_COUNT (128)
 
-#endif                       // _MESSAGE_H
+#define REG_SEQ_PERIOD (90) // milliseconds (uint16_t)
+#define REG_SEQ_INDEX (92)
+#define REG_SEQ_COUNT (93) // sequence item count (uint8_t)
+#define REG_SEQn (94)      // max MAX_SEQ_COUNT
+
+#define MAX_ACTIONS (255) // Max supported action count is 255 since action value (uint16) must be able to fit start/end indices
+#define ACTION_SIZE (5)   // size of action entry in bytes
+
+// Action entries are stored sequentially and can be accessed using ACTION_SIZE * index + REG_An_...
+#define REG_An_TYPE (224)         // action_type_t (uint8_t)
+#define REG_An_CHANNEL_MASK (225) // action channel mask (uint8_t)
+#define REG_An_PARAM_TARGET (226) // action parameter+target (uint8_t) upper nibble is parameter, lower nibble is target
+#define REG_An_VALUE_w (227)      // action value (uint16_t)
+
+#define MAX_TRIGS (32)
+#define TRIG_SIZE (4) // size of trig entry in bytes
+
+// Trig entries are stored sequentially and can be accessed using TRIG_SIZE * index + REG_TRIGn_...
+#define REG_TRIGn_INPUT (1505)    // uint8_t, upper nibble: trigger_mask, lower nibble: trigger_invert_mask
+#define REG_TRIGn_OUTPUT (1506)   // uint8_t, upper nibble: trigger_op_t, lower nibble: output_invert (bool)
+#define REG_TRIGn_ACTION_w (1507) // uint16_t, upper byte: action_start_index, lower byte: action_end_index
+
+#define REG_CHn_PARAM_w (1637) // Channel pulse generation parameters. see PARAM_TARGET_INDEX() for required offsets
+
+#endif // _MESSAGE_H
